@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam to Bazar link
 // @author       krystiangorecki
-// @version      2020.09.01
+// @version      2020.09.16
 // @namespace    https://github.com/krystiangorecki/steamgifts-userscripts/
 // @icon         https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg
 // @match        https://store.steampowered.com/app/*
@@ -18,7 +18,7 @@ function execute(){
     var header = document.querySelector('div.apphub_HomeHeaderContent div.apphub_AppName');
     debugger;
     if(header!=undefined) {
-        var gameTitle = header.innerText.replace('®','').replace('™','');
+        var gameTitle = header.innerText.replaceAll('®','').replaceAll('™','').replaceAll(':','');
         var bazarLink = document.createElement("a");
         bazarLink.innerHTML = ' <img src="https://bazar.lowcygier.pl/favicon.ico" style="height:20px"/>'
         bazarLink.classList.add('bazar');
