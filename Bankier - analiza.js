@@ -4,6 +4,8 @@
 // @version      1.0
 // @description  Knowledge is of no value unless you put it into practice.
 // @match        https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=*
+// @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
+// @downloadURL  https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
 // @grant        none
 // ==/UserScript==
 
