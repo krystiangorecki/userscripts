@@ -1,21 +1,15 @@
 // ==UserScript==
 // @name         Bankier - analiza
 // @namespace    https://github.com/krystiangorecki/userscripts/
-// @version      0.1
+// @version      1.0
+// @description  Knowledge is of no value unless you put it into practice.
 // @match        https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=*
-// @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
-// @downloadURL  https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
 // @grant        none
 // ==/UserScript==
-
-/*
-TODO lepsze ustalanie daty początkowej wykresu
-*/
 
 (function() {
     'use strict';
     setTimeout(addManualStartButton, 100);
-    //  setTimeout(execute, 500);
 })();
 
 
@@ -32,28 +26,40 @@ function execute() {
 }
 
 function resolveStartDate(periodString) {
-    var myMap = new Map();
-    myMap.set("1D", 86400000 );
-    myMap.set("1T", 604800000 );
-    myMap.set("1M", 2629800000 );
-    myMap.set("3M", 7889400000 );
-    myMap.set("6M", 15552000000 );
-    myMap.set("1R", 31104000000 );
-    myMap.set("5L", 155520000000 );
+    removeExistingMessageLinks();
 
-    var msPeriod = myMap.get(periodString);
-    if(msPeriod==undefined)
-    {
-        alert("w mapie brak okresu " + periodString);
-    } else{
-        removeExistingMessageLinks();
-        var now = new Date();
-        now.setHours(0);
-        now.setMinutes(0);
-        now.setSeconds(0);
-        var tsNow = new Date(now).getTime();
-        var messages = loadMessagesAfter(new Date(tsNow - msPeriod));
+    var graphBeginDate = new Date();
+    graphBeginDate.setHours(0);
+    graphBeginDate.setMinutes(0);
+    graphBeginDate.setSeconds(0);
+
+    switch(periodString) {
+        case "1D":
+            graphBeginDate.setDay(graphBeginDate.getDay()-1);
+            break;
+        case "1T":
+            graphBeginDate.setWeek(graphBeginDate.getWeek()-1);
+            break;
+        case "1M":
+            graphBeginDate.setMonth(graphBeginDate.getMonth()-1);
+            break;
+        case "3M":
+            graphBeginDate.setMonth(graphBeginDate.getMonth()-3);
+            break;
+        case "6M":
+            graphBeginDate.setMonth(graphBeginDate.getMonth()-6);
+            break;
+        case "1R":
+            graphBeginDate.setMonth(graphBeginDate.getMonth()-12);
+            break;
+        case "5L":
+            graphBeginDate.setMonth(graphBeginDate.getMonth()-60);
+            break;
+        default:
+            alert("w switchu brak pozycji: " + periodString);
+            return;
     }
+    var messages = loadMessagesAfter(graphBeginDate);
 }
 
 function removeExistingMessageLinks() {
@@ -66,7 +72,7 @@ function removeExistingMessageLinks() {
 }
 
 function loadMessagesAfter(graphBeginDate) {
-    console.log("graphBeginDate " + graphBeginDate);
+    // alert("graphBeginDate " + graphBeginDate);
     var moreLink = document.querySelector('.box300 .more-link');
     var baseUrl = moreLink.href;
     var currentPageNumber = 1;
@@ -150,7 +156,7 @@ function renderAllMessages(allMessages, graphBeginDate) {
             newLink.classList.add("newLink");
             newLink.innerHTML = '<b style="font-size: large;">↓</b>';
             newLink.title = message.date + " " + message.title;
-            newLink.style="position:absolute; top:0px; left:" + (7+position) + "px; z-index=999;";
+            newLink.style="position:absolute; top:0px; left:" + (7+position) + "px; z-index:-1;";
             insertAfter(document.querySelector('#wykres'), newLink);
         } else{
             //  alert("wiadomość z dnia " + Date.parse(message.date) + " jest za stara do pokazania na wykresie bo wykres zaczyna się od " + graphBeginDate);
