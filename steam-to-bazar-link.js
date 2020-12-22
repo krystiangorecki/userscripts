@@ -2,7 +2,7 @@
 // @name         Steam to Bazar link
 // @author       krystiangorecki
 // @version      2020.10.02
-// @namespace    https://github.com/krystiangorecki/steamgifts-userscripts/
+// @namespace    https://github.com/krystiangorecki/userscripts/
 // @icon         https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg
 // @match        https://store.steampowered.com/app/*
 // @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/steam-to-bazar-link.js
