@@ -31,16 +31,16 @@ function resolveStartDate(periodString) {
     removeExistingMessageLinks();
 
     var graphBeginDate = new Date();
-    graphBeginDate.setHours(0);
+    graphBeginDate.setHours(9);
     graphBeginDate.setMinutes(0);
     graphBeginDate.setSeconds(0);
 
     switch(periodString) {
         case "1D":
-            graphBeginDate.setDay(graphBeginDate.getDay()-1);
+            graphBeginDate.setHours(graphBeginDate.getHours()-24);
             break;
         case "1T":
-            graphBeginDate.setWeek(graphBeginDate.getWeek()-1);
+            graphBeginDate.setHours(graphBeginDate.getHours()-(7*24));
             break;
         case "1M":
             graphBeginDate.setMonth(graphBeginDate.getMonth()-1);
@@ -139,7 +139,7 @@ function renderAllMessages(allMessages, graphBeginDate) {
     var tsGraphBegin = graphBeginDate.getTime();
 
     var now = new Date();
-    now.setHours(0);
+    now.setHours(17);
     now.setMinutes(0);
     now.setSeconds(0);
     var tsNow = new Date(now).getTime();
@@ -158,7 +158,7 @@ function renderAllMessages(allMessages, graphBeginDate) {
             newLink.classList.add("newLink");
             newLink.innerHTML = '<b style="font-size: large;">↓</b>';
             newLink.title = message.date + " " + message.title;
-            newLink.style="position:absolute; top:0px; left:" + (7+position) + "px; z-index:-1;";
+            newLink.style="position:absolute; top:0px; left:" + (7+position) + "px; z-index:1;";
             insertAfter(document.querySelector('#wykres'), newLink);
         } else{
             //  alert("wiadomość z dnia " + Date.parse(message.date) + " jest za stara do pokazania na wykresie bo wykres zaczyna się od " + graphBeginDate);
