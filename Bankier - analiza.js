@@ -3,6 +3,8 @@
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @version      0.1
 // @match        https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=*
+// @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
+// @downloadURL  https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
 // @grant        none
 // ==/UserScript==
 
