@@ -120,7 +120,7 @@ function loadNextPage(url, currentPageNumber, graphBeginDate) {
             //debugger;
             var lastMessageDate = new Date(Date.parse(lastMessage.date));
             // alert("lastMessageDate: " + lastMessageDate + "    graphBeginDate: " + graphBeginDate);
-            var isLastPage = $(this).find("#articleList a.numeral").last().hasClass("active");
+            var isLastPage = $page.find("#articleList a.numeral").last().hasClass("active");
             var lastMessageDateOlderThanGraphBeginDate = lastMessageDate.getTime() < graphBeginDate.getTime();
             if (!isLastPage && !lastMessageDateOlderThanGraphBeginDate) {
                 // alert("pobieram stronę " + (currentPageNumber+1));
