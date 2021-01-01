@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bankier - analiza
 // @namespace    https://github.com/krystiangorecki/userscripts/
-// @version      1.0
+// @version      1.1
 // @description  Knowledge is of no value unless you put it into practice.
 // @match        https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=*
 // @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
@@ -56,6 +56,14 @@ function resolveStartDate(periodString) {
             break;
         case "5L":
             graphBeginDate.setMonth(graphBeginDate.getMonth()-60);
+            break;
+        case "Max":
+            var graphBeginDateInput = document.querySelector('input#periodStart');
+            if (graphBeginDateInput != undefined) {
+                var tsGraphBeginDateString = graphBeginDateInput.dataset.min_date;
+                var tsGraphBeginDate = parseInt(tsGraphBeginDateString, 10);
+                graphBeginDate = new Date(tsGraphBeginDate);
+            }
             break;
         default:
             alert("w switchu brak pozycji: " + periodString);
