@@ -15,9 +15,10 @@
 })();
 
 
-var allMessages = [];
+var allMessages;
 
 function execute() {
+    allMessages = [];
     var periodButton = document.querySelector("#wykresButton button.active");
     if (periodButton!=undefined) {
         var periodString = periodButton.innerText;
