@@ -150,7 +150,7 @@ function renderAllMessages(allMessages, graphBeginDate) {
     var tsNow = new Date(now).getTime();
 
     var graphDurationInMs = tsNow - tsGraphBegin;
-    allMessages.forEach((message) => {
+    allMessages.forEach((message, i) => {
         var tsMessageTime = new Date(Date.parse(message.date)).getTime();
         if(tsMessageTime > tsGraphBegin){
             var timeInMsFromGraphBegin = tsMessageTime - tsGraphBegin;
@@ -160,9 +160,12 @@ function renderAllMessages(allMessages, graphBeginDate) {
             newLink.classList.add("newLink");
             newLink.innerHTML = '<b style="font-size: large;">↓</b>';
             newLink.title = message.date + " " + message.title;
-            newLink.style="position:absolute; top:0px; left:" + (7+position) + "px; z-index:1;";
+            newLink.style="position:absolute; left:" + (7+position) + "px; z-index:1;  opacity:0.0; top:-20px; transition: all 1s;";
             newLink.href = message.href;
             insertAfter(document.querySelector('#wykres'), newLink);
+            setTimeout(function() {
+                $(newLink).css({ opacity: "1", top: "10px" });
+            }, 10*i);
         } else{
             //  alert("wiadomość z dnia " + Date.parse(message.date) + " jest za stara do pokazania na wykresie bo wykres zaczyna się od " + graphBeginDate);
         }
