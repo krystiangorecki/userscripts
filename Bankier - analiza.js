@@ -160,6 +160,7 @@ function renderAllMessages(allMessages, graphBeginDate) {
             newLink.innerHTML = '<b style="font-size: large;">↓</b>';
             newLink.title = message.date + " " + message.title;
             newLink.style="position:absolute; top:0px; left:" + (7+position) + "px; z-index:1;";
+            newLink.href = message.href;
             insertAfter(document.querySelector('#wykres'), newLink);
         } else{
             //  alert("wiadomość z dnia " + Date.parse(message.date) + " jest za stara do pokazania na wykresie bo wykres zaczyna się od " + graphBeginDate);
