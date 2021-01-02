@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Bankier - analiza
 // @namespace    https://github.com/krystiangorecki/userscripts/
-// @version      1.1
-// @description  Knowledge is of no value unless you put it into practice.
+// @version      1.2
+// @description  "Knowledge is of no value unless you put it into practice."
 // @match        https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=*
 // @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
 // @downloadURL  https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
@@ -82,7 +82,6 @@ function removeExistingMessageLinks() {
 }
 
 function loadMessagesAfter(graphBeginDate) {
-    // alert("graphBeginDate " + graphBeginDate);
     var moreLink = document.querySelector('.box300 .more-link');
     var baseUrl = moreLink.href;
     var currentPageNumber = 1;
@@ -125,13 +124,10 @@ function loadNextPage(url, currentPageNumber, graphBeginDate) {
             });
             allMessages = allMessages.concat(pageMessages);
             var lastMessage = pageMessages[pageMessages.length-1];
-            //debugger;
             var lastMessageDate = new Date(Date.parse(lastMessage.date));
-            // alert("lastMessageDate: " + lastMessageDate + "    graphBeginDate: " + graphBeginDate);
             var isLastPage = $page.find("#articleList a.numeral").last().hasClass("active");
             var lastMessageDateOlderThanGraphBeginDate = lastMessageDate.getTime() < graphBeginDate.getTime();
             if (!isLastPage && !lastMessageDateOlderThanGraphBeginDate) {
-                // alert("pobieram stronę " + (currentPageNumber+1));
                 loadNextPage(url, ++currentPageNumber, graphBeginDate);
             } else {
                 renderAllMessages(allMessages, graphBeginDate);
@@ -153,12 +149,9 @@ function renderAllMessages(allMessages, graphBeginDate) {
     var tsNow = new Date(now).getTime();
 
     var graphDurationInMs = tsNow - tsGraphBegin;
-    console.log("tsGraphBegin " + tsGraphBegin);
-    console.log("tsNow " + tsNow);
     allMessages.forEach((message) => {
         var tsMessageTime = new Date(Date.parse(message.date)).getTime();
         if(tsMessageTime > tsGraphBegin){
-            //debugger;
             var timeInMsFromGraphBegin = tsMessageTime - tsGraphBegin;
             var messagePlacementFraction = timeInMsFromGraphBegin/graphDurationInMs;
             var position = wykresWidth*messagePlacementFraction;
