@@ -100,11 +100,19 @@ function insertAsFirstChild(referenceNode, newNode) {
     referenceNode.insertBefore(newNode, referenceNode.firstChild);
 }
 
-function addManualStartButton(){
-    var newLink = document.createElement("button");
-    newLink.innerText = 'START';
-    insertAfter(document.querySelector('#wykresButton'), newLink);
-    newLink.addEventListener("click", execute);
+function addManualStartButton() {
+    if (isMessagesLinkPresent()) {
+        var newLink = document.createElement("a");
+        newLink.innerText = 'START';
+        newLink.id = 'startButton';
+        newLink.classList.add('btnOrange');
+        insertAfter(document.querySelector('#wykresButton'), newLink);
+        newLink.addEventListener("click", execute);
+    }
+}
+
+function isMessagesLinkPresent() {
+   return document.querySelector('.box300 .more-link') != null;
 }
 
 function loadNextPage(url, currentPageNumber, graphBeginDate) {
