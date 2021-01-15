@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Steam to Bazar link (and Steamgifts)
 // @author       krystiangorecki
-// @version      2020.09.16
+// @version      2021.01.15
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @icon         https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg
 // @match        https://store.steampowered.com/app/*
