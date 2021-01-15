@@ -1,24 +1,23 @@
 // ==UserScript==
-// @name         Steam to Bazar link
+// @name         Steam to Bazar link (and Steamgifts)
 // @author       krystiangorecki
-// @version      2020.10.02
+// @version      2020.09.16
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @icon         https://upload.wikimedia.org/wikipedia/commons/8/83/Steam_icon_logo.svg
 // @match        https://store.steampowered.com/app/*
 // @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/steam-to-bazar-link.js
 // @downloadURL  https://raw.githubusercontent.com/krystiangorecki/userscripts/master/steam-to-bazar-link.js
 // @grant        none
-// https://github.com/krystiangorecki/userscripts/edit/master/steam-to-bazar-link.js
 // ==/UserScript==
 
 (function() {
     'use strict';
-    setTimeout(execute, 100);
+    setTimeout(addSteamgiftsLink, 100);
+    setTimeout(addBazarLink, 150);
 })();
 
-function execute(){
+function addBazarLink(){
     var header = document.querySelector('div.apphub_HomeHeaderContent div.apphub_AppName');
-    debugger;
     if(header!=undefined) {
         var gameTitle = header.innerText.replaceAll('®','').replaceAll('™','').replaceAll(':','').replace('-',' ');
         var bazarLink = document.createElement("a");
@@ -29,6 +28,15 @@ function execute(){
     }
 }
 
-/*
-https://github.com/krystiangorecki/userscripts/edit/master/steam-to-bazar-link.js
-*/
+function addSteamgiftsLink(){
+    var header = document.querySelector('div.apphub_HomeHeaderContent div.apphub_AppName');
+    var appIdElement = document.querySelector('div.glance_tags');
+    if(appIdElement!=undefined) {
+        var appId = appIdElement.dataset.appid;
+        var sgLink = document.createElement("a");
+        sgLink.innerHTML = ' <img src="https://cdn.steamgifts.com/img/favicon.ico" style="height:20px; margin-left:10px;"/>'
+        sgLink.classList.add('steamgifts');
+        sgLink.setAttribute("href", "https://www.steamgifts.com/giveaways/search?app=" + appId);
+        header.appendChild(sgLink);
+    }
+}
