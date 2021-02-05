@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bankier - analiza
 // @namespace    https://github.com/krystiangorecki/userscripts/
-// @version      1.2
+// @version      1.3
 // @description  "Knowledge is of no value unless you put it into practice."
 // @match        https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=*
 // @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
