@@ -9,6 +9,7 @@
 // @grant        none
 // ==/UserScript==
 
+// https://github.com/krystiangorecki/userscripts/edit/master/Bankier%20-%20analiza.js
 (function() {
     'use strict';
     setTimeout(addManualStartButton, 100);
@@ -24,7 +25,7 @@ function execute() {
         var graphBeginDate = resolveStartDate(periodString);
         var symbolToRender = '↓';
         var messages = loadMessagesAfter(graphBeginDate, symbolToRender);
-        symbolToRender = 'I';
+        symbolToRender = '📎';
         var statements = loadStatementsAfter(graphBeginDate, symbolToRender);
 
     } else {
@@ -94,7 +95,6 @@ function loadMessagesAfter(graphBeginDate, symbolToRender) {
 }
 
 function loadStatementsAfter(graphBeginDate, symbolToRender) {
-    debugger;
     var moreLink = document.querySelectorAll('.box300 .more-link')[1];
     var baseUrl = moreLink.href;
     var currentPageNumber = 1;
@@ -134,7 +134,6 @@ function loadNextPage(url, currentPageNumber, graphBeginDate, symbolToRender) {
         dataType:   'html',
         success:    function (data) {
             var $page = $(data);
-            debugger;
             var $elements = $page.find('section.section div.article');
             var pageMessages = [];
             $elements.each(function( index ) {
@@ -146,9 +145,14 @@ function loadNextPage(url, currentPageNumber, graphBeginDate, symbolToRender) {
             });
             allMessages = allMessages.concat(pageMessages);
             var lastMessage = pageMessages[pageMessages.length-1];
-            var lastMessageDate = new Date(Date.parse(lastMessage.date));
-            var isLastPage = $page.find("#articleList a.numeral").last().hasClass("active");
-            var lastMessageDateOlderThanGraphBeginDate = lastMessageDate.getTime() < graphBeginDate.getTime();
+            var isLastPage = false;
+            if(lastMessage != undefined) {
+                var lastMessageDate = new Date(Date.parse(lastMessage.date));
+                isLastPage = $page.find("#articleList a.numeral").last().hasClass("active");
+                var lastMessageDateOlderThanGraphBeginDate = lastMessageDate.getTime() < graphBeginDate.getTime();
+            } else {
+                isLastPage = true;
+            }
             if (!isLastPage && !lastMessageDateOlderThanGraphBeginDate) {
                 loadNextPage(url, ++currentPageNumber, graphBeginDate, symbolToRender);
             } else {
@@ -185,14 +189,15 @@ function renderAllMessages(allMessages, graphBeginDate, symbolToRender) {
             var position = wykresWidth*messagePlacementFraction;
             var newLink = document.createElement("a");
             newLink.classList.add("newLink");
-            newLink.innerHTML = '<b style="font-size: large;">' + symbolToRender + '</b>';
+            var fontWeigh = symbolToRender == '↓' ? 200 : 'large';
+            newLink.innerHTML = '<b style="font-weigh: '+fontWeigh+';">' + symbolToRender + '</b>';
             newLink.title = message.date + " " + message.title;
             newLink.style="position:absolute; left:" + (7+position) + "px; z-index:1;  opacity:0.0; top:-20px; transition: all 1s;";
             newLink.href = message.href;
             insertAfter(document.querySelector('#wykres'), newLink);
             var topValue = symbolToRender == '↓' ? 10 : 30;
             setTimeout(function() {
-                $(newLink).css({ opacity: "1", top: topValue+"px" });
+                $(newLink).css({ opacity: "1", top: topValue+"px"});
             }, 10*i);
         } else{
             //  alert("wiadomość z dnia " + Date.parse(message.date) + " jest za stara do pokazania na wykresie bo wykres zaczyna się od " + graphBeginDate);
