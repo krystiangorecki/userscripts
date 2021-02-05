@@ -14,15 +14,19 @@
     setTimeout(addManualStartButton, 100);
 })();
 
-
 var allMessages;
 
 function execute() {
     allMessages = [];
     var periodButton = document.querySelector("#wykresButton button.active");
-    if (periodButton!=undefined) {
+    if (periodButton != undefined) {
         var periodString = periodButton.innerText;
-        resolveStartDate(periodString);
+        var graphBeginDate = resolveStartDate(periodString);
+        var symbolToRender = '↓';
+        var messages = loadMessagesAfter(graphBeginDate, symbolToRender);
+        symbolToRender = 'I';
+        var statements = loadStatementsAfter(graphBeginDate, symbolToRender);
+
     } else {
         alert("nie zaznaczono okresu");
     }
@@ -68,9 +72,9 @@ function resolveStartDate(periodString) {
             break;
         default:
             alert("w switchu brak pozycji: " + periodString);
-            return;
+            return undefined;
     }
-    var messages = loadMessagesAfter(graphBeginDate);
+    return graphBeginDate;
 }
 
 function removeExistingMessageLinks() {
@@ -82,11 +86,19 @@ function removeExistingMessageLinks() {
     }
 }
 
-function loadMessagesAfter(graphBeginDate) {
+function loadMessagesAfter(graphBeginDate, symbolToRender) {
     var moreLink = document.querySelector('.box300 .more-link');
     var baseUrl = moreLink.href;
     var currentPageNumber = 1;
-    loadNextPage(baseUrl, currentPageNumber, graphBeginDate);
+    loadNextPage(baseUrl, currentPageNumber, graphBeginDate, symbolToRender);
+}
+
+function loadStatementsAfter(graphBeginDate, symbolToRender) {
+    debugger;
+    var moreLink = document.querySelectorAll('.box300 .more-link')[1];
+    var baseUrl = moreLink.href;
+    var currentPageNumber = 1;
+    loadNextPage(baseUrl, currentPageNumber, graphBeginDate, symbolToRender);
 }
 
 
@@ -115,14 +127,15 @@ function isMessagesLinkPresent() {
    return document.querySelector('.box300 .more-link') != null;
 }
 
-function loadNextPage(url, currentPageNumber, graphBeginDate) {
+function loadNextPage(url, currentPageNumber, graphBeginDate, symbolToRender) {
     $.ajax ( {
         type:       'GET',
         url:         url + "\\" + currentPageNumber,
         dataType:   'html',
         success:    function (data) {
             var $page = $(data);
-            var $elements = $page.find('div.article');
+            debugger;
+            var $elements = $page.find('section.section div.article');
             var pageMessages = [];
             $elements.each(function( index ) {
                 var newMessage = [];
@@ -137,42 +150,49 @@ function loadNextPage(url, currentPageNumber, graphBeginDate) {
             var isLastPage = $page.find("#articleList a.numeral").last().hasClass("active");
             var lastMessageDateOlderThanGraphBeginDate = lastMessageDate.getTime() < graphBeginDate.getTime();
             if (!isLastPage && !lastMessageDateOlderThanGraphBeginDate) {
-                loadNextPage(url, ++currentPageNumber, graphBeginDate);
+                loadNextPage(url, ++currentPageNumber, graphBeginDate, symbolToRender);
             } else {
-                renderAllMessages(allMessages, graphBeginDate);
+                renderAllMessages(allMessages, graphBeginDate, symbolToRender);
             }
         }
     } );
 }
 
 
-function renderAllMessages(allMessages, graphBeginDate) {
+function renderAllMessages(allMessages, graphBeginDate, symbolToRender) {
     var wykresBox = document.querySelector('#wykres').getBoundingClientRect();
     var wykresWidth = document.querySelector('#wykres').offsetWidth-65;
     var tsGraphBegin = graphBeginDate.getTime();
 
     var now = new Date();
-    now.setHours(17);
+    if (now.getHours() > 17) {
+        now.setHours(17);
+    }
     now.setMinutes(0);
     now.setSeconds(0);
     var tsNow = new Date(now).getTime();
 
     var graphDurationInMs = tsNow - tsGraphBegin;
+    var allowOneOverTheRange = true;
     allMessages.forEach((message, i) => {
         var tsMessageTime = new Date(Date.parse(message.date)).getTime();
-        if(tsMessageTime > tsGraphBegin){
+        if(tsMessageTime > tsGraphBegin || allowOneOverTheRange){
+            if(tsMessageTime <= tsGraphBegin){
+                allowOneOverTheRange = false;
+            }
             var timeInMsFromGraphBegin = tsMessageTime - tsGraphBegin;
             var messagePlacementFraction = timeInMsFromGraphBegin/graphDurationInMs;
             var position = wykresWidth*messagePlacementFraction;
             var newLink = document.createElement("a");
             newLink.classList.add("newLink");
-            newLink.innerHTML = '<b style="font-size: large;">↓</b>';
+            newLink.innerHTML = '<b style="font-size: large;">' + symbolToRender + '</b>';
             newLink.title = message.date + " " + message.title;
             newLink.style="position:absolute; left:" + (7+position) + "px; z-index:1;  opacity:0.0; top:-20px; transition: all 1s;";
             newLink.href = message.href;
             insertAfter(document.querySelector('#wykres'), newLink);
+            var topValue = symbolToRender == '↓' ? 10 : 30;
             setTimeout(function() {
-                $(newLink).css({ opacity: "1", top: "10px" });
+                $(newLink).css({ opacity: "1", top: topValue+"px" });
             }, 10*i);
         } else{
             //  alert("wiadomość z dnia " + Date.parse(message.date) + " jest za stara do pokazania na wykresie bo wykres zaczyna się od " + graphBeginDate);
