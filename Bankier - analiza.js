@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Bankier - analiza
 // @namespace    https://github.com/krystiangorecki/userscripts/
-// @version      1.3
+// @version      1.4
 // @description  "Knowledge is of no value unless you put it into practice."
 // @match        https://www.bankier.pl/inwestowanie/profile/quote.html?symbol=*
 // @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Bankier%20-%20analiza.js
@@ -15,10 +15,7 @@
     setTimeout(addManualStartButton, 100);
 })();
 
-var allMessages;
-
 function execute() {
-    allMessages = [];
     var periodButton = document.querySelector("#wykresButton button.active");
     if (periodButton != undefined) {
         var periodString = periodButton.innerText;
@@ -91,14 +88,14 @@ function loadMessagesAfter(graphBeginDate, symbolToRender) {
     var moreLink = document.querySelector('.box300 .more-link');
     var baseUrl = moreLink.href;
     var currentPageNumber = 1;
-    loadNextPage(baseUrl, currentPageNumber, graphBeginDate, symbolToRender);
+    loadNextPage(baseUrl, currentPageNumber, graphBeginDate, symbolToRender, []);
 }
 
 function loadStatementsAfter(graphBeginDate, symbolToRender) {
     var moreLink = document.querySelectorAll('.box300 .more-link')[1];
     var baseUrl = moreLink.href;
     var currentPageNumber = 1;
-    loadNextPage(baseUrl, currentPageNumber, graphBeginDate, symbolToRender);
+    loadNextPage(baseUrl, currentPageNumber, graphBeginDate, symbolToRender, []);
 }
 
 
@@ -127,7 +124,7 @@ function isMessagesLinkPresent() {
    return document.querySelector('.box300 .more-link') != null;
 }
 
-function loadNextPage(url, currentPageNumber, graphBeginDate, symbolToRender) {
+function loadNextPage(url, currentPageNumber, graphBeginDate, symbolToRender, allMessages) {
     $.ajax ( {
         type:       'GET',
         url:         url + "\\" + currentPageNumber,
@@ -154,7 +151,7 @@ function loadNextPage(url, currentPageNumber, graphBeginDate, symbolToRender) {
                 isLastPage = true;
             }
             if (!isLastPage && !lastMessageDateOlderThanGraphBeginDate) {
-                loadNextPage(url, ++currentPageNumber, graphBeginDate, symbolToRender);
+                loadNextPage(url, ++currentPageNumber, graphBeginDate, symbolToRender, allMessages);
             } else {
                 renderAllMessages(allMessages, graphBeginDate, symbolToRender);
             }
