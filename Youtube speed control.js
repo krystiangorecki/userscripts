@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name         Youtube speed control
+// @namespace    https://github.com/krystiangorecki/userscripts/
 // @version      1.0
 // @description  "Direction is more important than speed. You can go fast in the wrong direction."
-// @author       kgorecki
 // @match        https://www.youtube.com/watch*
 // @icon         https://www.youtube.com/s/desktop/4fc9328c/img/favicon.ico
+// @updateURL    https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Youtube%20speed%20control.js
+// @downloadURL  https://raw.githubusercontent.com/krystiangorecki/userscripts/master/Youtube%20speed%20control.js
 // @grant        none
 // ==/UserScript==
 
