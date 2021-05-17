@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Youtube speed control
 // @namespace    https://github.com/krystiangorecki/userscripts/
-// @version      1.0
+// @version      1.1
 // @description  "Direction is more important than speed. You can go fast in the wrong direction."
 // @match        https://www.youtube.com/watch*
 // @icon         https://www.youtube.com/s/desktop/4fc9328c/img/favicon.ico
@@ -12,13 +12,17 @@
 
 (function() {
     'use strict';
-    setTimeout(function() { addManualStartButton(1); }, 500);
-    setTimeout(function() { addManualStartButton(1.25); }, 500);
-    setTimeout(function() { addManualStartButton(1.5); }, 500);
-    setTimeout(function() { addManualStartButton(1.75); }, 500);
-    setTimeout(function() { addManualStartButton(2); }, 500);
-    setTimeout(function() { addManualStartButton(2.5); }, 500);
-    setTimeout(function() { addManualStartButton(3); }, 500);
+    setTimeout(function() { addManualStartButton(1);   }, 200);
+    setTimeout(function() { addManualStartButton(1.25);}, 200);
+    setTimeout(function() { addManualStartButton(1.5); }, 200);
+    setTimeout(function() { addManualStartButton(1.75);}, 200);
+    setTimeout(function() { addManualStartButton(2);   }, 200);
+    setTimeout(function() { addManualStartButton(2.1); }, 200);
+    setTimeout(function() { addManualStartButton(2.2); }, 200);
+    setTimeout(function() { addManualStartButton(2.3); }, 200);
+    setTimeout(function() { addManualStartButton(2.4); }, 200);
+    setTimeout(function() { addManualStartButton(2.5); }, 200);
+    setTimeout(function() { addManualStartButton(3);   }, 200);
 })();
 
 function insertAfter(referenceNode, newNode) {
