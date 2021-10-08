@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         r search page additions
 // @namespace    http://tampermonkey.net/
-// @version      0.9
+// @version      0.91
 // @description  try to take over the world!
 // @author       You
 // @match        https://www.r.pl/pl/szukaj/*
