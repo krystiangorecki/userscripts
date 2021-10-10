@@ -36,29 +36,17 @@ function dividerAfterŁódź(){
 }
 
 function optimizeStyling(){
-
-    var labels = document.querySelectorAll('.favourites_note');
-    for (var i = 0; i < labels.length; ++i) {
-        labels[i].remove();
-    }
-    labels = document.querySelectorAll('a[title="usuń"]');
-    for (i = 0; i < labels.length; ++i) {
-        labels[i].remove();
-    }
-
-
-    GM_addStyle(' .favourites_box:hover { margin: 1px 0px 1px 0px  !important; }');
-    const fav = Array.prototype.slice.apply(
-        document.querySelectorAll('div.favourites_box')
-    );
-    fav.forEach(b => { b.setAttribute("style"," height: 440px;  margin: 2px 1px 2px 1px;  ") } );
-    const favname = Array.prototype.slice.apply(
-        document.querySelectorAll('div.favourites_name')
-    );
-    favname.forEach(b => { b.setAttribute("style","margin: 1px") } );
+    document.querySelectorAll('.favourites_note').forEach(el => {el.remove()});
+    document.querySelectorAll('a[title="usuń"]').forEach(el => {el.remove()});
+    document.querySelectorAll('.favourites_content_list>br').forEach(el => {el.remove()});
+    document.querySelectorAll('.favourites_box_conteiner_footer').forEach(el => {el.remove()});
 
     GM_addStyle(' .anons_info {padding: 0px  !important; }');
     GM_addStyle(' .favourites_content_list {margin: 0px !important; }');
+    GM_addStyle(' .favourites_box:hover { margin: 1px 0px 1px 0px  !important; }');
+    GM_addStyle(' .favourites_box { height: 400px;  margin: 2px 1px 2px 1px;  !important; }');
+    GM_addStyle(' .favourites_name { margin: 1px; !important; }');
+    GM_addStyle(' .button_red { padding: 0px 15px; height: 20px; font-size: 13px; !important; }');
 }
 
 function addFullWidthButton(){
