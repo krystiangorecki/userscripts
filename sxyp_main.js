@@ -1,0 +1,447 @@
+// ==UserScript==
+// @name         sxyp
+// @namespace    https://github.com/krystiangorecki/userscripts/
+// @author       You
+// @version      1.4
+// @description  "Do the difficult things while they are easy and do the great things while they are small."
+// @match        https://yp
+// @match        https://yp/o/*
+// @match        https://yp/*.html*
+// @match        https://sxyp/
+// @match        https://sxyp/o/*
+// @match        https://sxyp/*.html*
+// @match        https://sxyp/
+// @grant        GM_addStyle
+// @run-at       document-end
+// ==/UserScript==
+
+//v1.1 added marking external links
+//v1.2 added direct links on movie page with separate scenes
+//v1.3 remove " and " from search query
+//v1.4 remove some unused code
+
+var buttonStyle = ''; //"right:0px; position:relative";
+
+GM_addStyle(' .sharing_toolbox {    margin-top: 5px;    text-align: right;    position: absolute;  z-index:100;   right: 40px; } ');
+
+(function() {
+    'use strict';
+
+    redirectIfSearchQueryContainsAnd();
+
+    copyMovieSizeToTheTop();
+    markLesAndSolo();
+    markExternalLinks();
+    addLinksToPlaylist();
+    player();
+    addComboButton();
+    addCopyLinkButton();
+    addCopyButton();
+    addDownloadButton();
+    removeLayerOverThePlayer();
+    redirectToDVMirrorSite();
+    addVerticalProgressNumbers();
+    showLinkForEachSceneInCaseOfComboContainer();
+
+    $("[onclick]").removeAttr("onclick");
+    $("*").unbind("click");
+    $("[onclick]").removeAttr("onclick");
+    $("*").unbind("click");
+
+    removeAllIframes();
+})();
+
+
+function redirectIfSearchQueryContainsAnd() {
+    var url = window.location.href;
+    if (url.indexOf('-and-')>10 || url.indexOf('-And-')>10  || url.indexOf('%20And%20')>10 || url.indexOf('-amp-')>10 ) {
+        var newurl = url.replace('-and-', '-').replace('-And-', '-').replace('%20And%20', '-').replace('-amp-', ' ');
+        window.location = newurl;
+    }
+}
+
+function showLinkForEachSceneInCaseOfComboContainer() {
+    var scenes = document.querySelectorAll('div.combo_container .combo_mode');
+    if (scenes.length > 0) {
+        for (var i = 0 ; i < scenes.length ; i++) {
+            var sceneId = scenes[i].dataset.postid;
+            var href = "/post/" + sceneId + ".html";
+            addButtonAfter("DIRECT LINK", href, "", "", scenes[i]);
+        }
+    }
+}
+
+function addVerticalProgressNumbers() {
+    var boxes = document.querySelectorAll('div.post_el_small');
+    for (var i = 1 ; i < boxes.length ; i++) {
+        if ((i+1)%3 == 0) {
+            var newEl = document.createElement("span");
+            newEl.innerText = '' + (i+1);
+            insertAfter(boxes[i], newEl);
+        }
+    }
+}
+
+function copyMovieSizeToTheTop() {
+    setTimeout(function() {
+        var dest = document.querySelector('b.donate');
+        if (dest == undefined) {
+            return;
+        }
+        var text = document.querySelector('div.post_control').previousSibling.innerText;
+        const regex = /size:(\d+)/i;
+        var match = regex.exec(text);
+        if (match != undefined) {
+            var newElement = document.createElement('span');
+            newElement.innerText = match[1] + ' MB';
+            newElement.classList.add('post_text');
+            newElement.setAttribute('style','padding-left:50px');
+            insertAfter(dest, newElement);
+        }
+    }, 10);
+
+}
+
+function removeLayerOverThePlayer() {
+    setTimeout(function() {
+        var adLinkOverThPlayer = document.querySelector('#vid_container_id>a.tdn');
+        if (adLinkOverThPlayer != null) {
+            adLinkOverThPlayer.outerHTML='';
+        }
+    }, 1000);
+
+}
+
+function redirectToDVMirrorSite() {
+
+    // if post not found
+    var insertAfterElement = document.querySelector('.main_content>span.page_message');
+    if (insertAfterElement == null) {
+        return;
+    }
+    var url = window.location.pathname;
+    var movieId = url.match(/([a-fA-F\d]{10,15}).html/)[1];
+    var buttonId = "gotoMirror";
+    addButtonAfter('[ GO TO MIRROR ]', "http://" + decodeURIComponent('%64%65%75%74%73%63%68%6'+'5%2e%76%69%64%65%6f') + "/Main/" + movieId, buttonId, '', insertAfterElement);
+
+
+    //if content removed
+    var contentRemoved = document.querySelector('span[style="position: relative;top:20%;font-size: 25px;font-weight: bold;"]');
+    if (contentRemoved == null) {
+        return;
+    }
+    insertAfterElement =document.querySelector('span[style="position: relative;top:20%;font-size: 25px;font-weight: bold;"]');
+    if (insertAfterElement == null) {
+        return;
+    }
+    url = window.location.pathname;
+    movieId = url.match(/([a-fA-F\d]{10,15}).html/)[1];
+    buttonId = "gotoMirror";
+    addButtonAfter('[ GO TO MIRROR ]', "http://" + decodeURIComponent('%64%65%75%74%73%63%6'+'8%65%2e%76%69%64%65%6f') + "/Main/" + movieId, buttonId, '', insertAfterElement);
+
+}
+
+function delayedLayerRemoval() {
+    setTimeout(function() {
+        var divs = document.querySelectorAll("div[id][style]");
+        if (divs.length>0) {
+            divs[divs.length].outerHTML='';
+        }
+    }, 4000);
+}
+
+function player() {
+
+    function hvponplay(el) {
+        $(el).fadeIn();
+    }
+    $(document).on('mouseover','.maxi_post_player_img, .mini_post_player_img', function(e) {
+        var thumb_el = $(this).closest('div.vid_container').find('img');
+        var hvp = thumb_el.data('hvp');
+        var isrc = thumb_el.data('hvpsrc');
+        var hvpp = thumb_el.attr('data-hvpp');
+        if (hvp == "0" || isrc == '/css/converting.jpg') return;
+        if (hvpp == "0") {
+            hvp_src = isrc.replace("full.jpg", "vidthumb.mp4");
+            var hvp_player = "<video autoplay loop class='hvp_player' onplay='hvponplay(this)' src='"+hvp_src+"'></video>";
+            $(this).closest('div.vid_container').prepend(hvp_player);
+            thumb_el.attr('data-hvpp',"1");
+        } else {
+            $(this).closest('div.vid_container').find('video.hvp_player').fadeIn();
+        }
+    });
+
+    // player stop delayed by 30s
+    $(document).on('mouseout','.maxi_post_player_img, .mini_post_player_img', function(e) {
+        var customThis = $(this);
+        setTimeout(function() {
+            var thumb_el = customThis.closest('div.vid_container').find('img');
+            var hvpp = thumb_el.attr('data-hvpp');
+            if (hvpp == "0") return;
+            customThis.closest('div.vid_container').find('video.hvp_player').fadeOut();
+        }, 30000, customThis);
+    });
+}
+
+
+function addLinksToPlaylist() {
+    var linkTemplate = document.querySelectorAll(".pl_vid_el");
+    for (var i=0; i<linkTemplate.length; i++){
+        var hash = linkTemplate[i].dataset.hash;
+        linkTemplate[i].outerHTML = '<a href="/post/' + hash + '.html">' + linkTemplate[i].outerHTML + '</a>';
+    }
+}
+
+function addCopyButton() {
+    var insertAfterElement = document.querySelector('.ypsv-nm-div');
+    if (insertAfterElement == null) {
+        return;
+    }
+    var title = cleanTitle();
+    var buttonId = "copyButton";
+    addButtonAfter('[ copy ]', '#', buttonId, '', insertAfterElement);
+    var valueToCopy = title;
+    makeButtonCopyToClipboard(buttonId, valueToCopy);
+}
+
+
+function cleanTitle() {
+    var titleBlock = document.querySelector('div.post_text');
+    // usuwam tagi (sposób 1) wszystkie linki z klasą hash_link
+    var tagsToRemove = titleBlock.querySelectorAll("a.hash_link");
+    if (tagsToRemove.length > 0) {
+        for (var i = 0; i < tagsToRemove.length ; i++){
+            if (tagsToRemove[i].innerText.indexOf("#") == 0) {
+                tagsToRemove[i].outerHTML="";
+            }
+        }
+    }
+
+    // usuwam tagi (sposób 2) wszystko po ostatnim plusie
+    var title = titleBlock.innerText;
+    /*if (title.indexOf("+") != -1) {
+        title = title.substring(0, title.lastIndexOf("+"));
+    }*/
+    /*var names = document.querySelectorAll('.video-tags-list .btn.btn-default.label:not(.main)');
+    if (names.length > 0) {
+        for (var i = 0; i < names.length ; i++){
+            if (names[i].innerText.indexOf("+") == -1) {
+                title += ', ' + names[i].innerText;
+            }
+        }
+    }*/
+    title += ' ';
+    title = title.replace(/\(Download ASAP. I WILL NOT be Re-uploading it\)/g , " ");
+    title = title.replace(/\t+/g , " ");
+    title = title.replace(/ ✓/g , " ");
+    title = title.replace(/\?/g , " ");
+    title = title.replace(/\\/g , " ");
+    title = title.replace(/\//g , " ");
+    title = title.replace(/\+/g , " ");
+    title = title.replace(/\n/g , " ");
+    title = title.replace(/\|/g , " ");
+    title = title.replace(/\*/g , " ");
+    title = title.replace(/"/g , " ");
+    title = title.replace(/Cast:/g , " ");
+    title = title.replace(/:/g , " ");
+    title = title.replace(/#HD/g , " ");
+    title = title.replace(/#/g , "");
+    title = title.replace(/⭐/g , "");
+    title = title.replace(/, ,/g , "");
+    title = title.replace(/  /g , " ");
+
+    return title;
+}
+
+function addCopyLinkButton() {
+    var insertAfterElement = document.querySelector('.ypsv-nm-div');
+    if (insertAfterElement == null) {
+        return;
+    }
+    var buttonId = "copyLinkButton";
+    addButtonAfter('[ copylink ]', '#', buttonId, '', insertAfterElement);
+    var video = document.querySelector("video");
+    var valueToCopy = video.src;
+    makeButtonCopyToClipboard(buttonId, valueToCopy);
+}
+
+function removeAllIframes() {
+    var iframes = document.querySelectorAll("iframe");
+    for (var i = 0; i < iframes.length; ++i) {
+        iframes[i].remove();
+    }
+    var ads = document.querySelectorAll(".fbd");
+    for (i = 0; i < ads.length; ++i) {
+        ads[i].remove();
+    }
+    var toolbox = document.querySelector("#sharing_toolbox");
+    if (toolbox != null) {
+        toolbox.remove();
+    }
+
+}
+
+function addDownloadButton() {
+    var insertAfterElement = document.querySelector('.ypsv-nm-div');
+    if (insertAfterElement == undefined) {
+        return;
+    }
+    var video = document.querySelector("video");
+    addButtonAfter("[ download ]", video.src, "", "", insertAfterElement);
+
+    setTimeout(function() {
+        var insertAfterElement = document.querySelector("#copyButton");
+        if (insertAfterElement == undefined) {
+            return;
+        }
+        var video = document.querySelector("video");
+        var buttonId = "saveAsButton";
+        addButtonAfter('[ SAVE AS ... ]', video.src, buttonId, '', insertAfterElement);
+    },3000);
+
+}
+
+function addButtonAfter(label, href, buttonId, buttonClass, insertAfterElement) {
+    var newbutton = document.createElement("a");
+    newbutton.text = label;
+    if (href != undefined && href.length>0 ) {
+        newbutton.setAttribute("href", href);
+    }
+    if (buttonId != undefined && buttonId.length>0) {
+        newbutton.setAttribute("id", buttonId);
+    }
+    if (buttonClass != undefined && buttonClass.length>0) {
+        newbutton.setAttribute("class", buttonClass);
+    }
+    newbutton.setAttribute("style", buttonStyle);
+    insertAfterElement.parentNode.insertBefore(newbutton, insertAfterElement.nextSibling);
+}
+
+function addComboButton() {
+    var insertAfterElement = document.querySelector('.ypsv-nm-div');
+    if (insertAfterElement == null) {
+        return;
+    }
+    var video = document.querySelector("video");
+    var valueToCopy = video.src;
+    var buttonId = "comboCopyLinkButton";
+    addButtonAfter(" [ copy both ] ", '#', buttonId, "", insertAfterElement);
+    makeComboButtonCopyToClipboard(buttonId, valueToCopy);
+}
+
+function makeButtonCopyToClipboard(buttonId, valueToCopy) {
+    var btn = document.querySelector('#'+buttonId);
+    btn.addEventListener('click', function(event) {
+        copyTextToClipboard(valueToCopy);
+    });
+}
+
+// unusual, copies two values one after another
+function makeComboButtonCopyToClipboard(buttonId, valueToCopy) {
+    var btn = document.querySelector('#'+buttonId);
+    btn.addEventListener('click', function(event) {
+        //wersja 2
+        var video = document.querySelector("video");
+        valueToCopy = video.src;
+        //copyTextToClipboard(valueToCopy);
+        var valueToCopy2 = cleanTitle();
+        setTimeout( function() {copyTextToClipboard(valueToCopy2);} , 500);
+    });
+}
+
+// copying requires hidden textarea
+function copyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+
+    //
+    // *** This styling is an extra step which is likely not required. ***
+    //
+    // Why is it here? To ensure:
+    // 1. the element is able to have focus and selection.
+    // 2. if element was to flash render it has minimal visual impact.
+    // 3. less flakyness with selection and copying which **might** occur if
+    //    the textarea element is not visible.
+    //
+    // The likelihood is the element won't even render, not even a flash,
+    // so some of these are just precautions. However in IE the element
+    // is visible whilst the popup box asking the user for permission for
+    // the web page to copy to the clipboard.
+    //
+
+    // Place in top-left corner of screen regardless of scroll position.
+    textArea.style.position = 'fixed';
+    textArea.style.top = 0;
+    textArea.style.left = 0;
+
+    // Ensure it has a small width and height. Setting to 1px / 1em
+    // doesn't work as this gives a negative w/h on some browsers.
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+
+    // We don't need padding, reducing the size if it does flash render.
+    textArea.style.padding = 0;
+
+    // Clean up any borders.
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+
+    // Avoid flash of white box if rendered for any reason.
+    textArea.style.background = 'transparent';
+
+
+    textArea.value = text;
+
+    document.body.appendChild(textArea);
+
+    textArea.select();
+
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        //console.log('Copying text command was ' + msg);
+    } catch (err) {
+        //console.log('Oops, unable to copy');
+    }
+
+    document.body.removeChild(textArea);
+}
+
+function markLesAndSolo() {
+    var boxes = document.querySelectorAll("div.post_text");
+    for (var i = 0; i < boxes.length; ++i) {
+        var text = boxes[i].textContent;
+        if (text.indexOf("#"+ decodeURIComponent('%4c%65%73%62%69%61%6e')) > -1 || text.indexOf("#"+ decodeURIComponent('%6c%65%73%62%69%61%6e')) > -1 || text.indexOf("#solo") > -1 || text.indexOf("#Solo") > -1) {
+            boxes[i].parentNode.style="border:1px solid grey";
+        }
+    }
+}
+
+function markExternalLinks() {
+    var boxes = document.querySelectorAll("div.post_text");
+    for (var i = 0; i < boxes.length; ++i) {
+        var text = boxes[i].textContent;
+        if (text.indexOf("vtube.to") > -1) {
+            boxes[i].parentNode.style="border:2px solid gold";
+            continue;
+        }
+        if (text.indexOf("ddownload") > -1) {
+            boxes[i].parentNode.style="border:2px solid #093094";
+        } else if (text.indexOf("rapidgator") > -1) {
+            boxes[i].parentNode.style="border:2px solid #bb4500";
+        }
+    }
+}
+
+function insertAfter(referenceNode, newNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
+}
+function insertBefore(referenceNode, newNode) {
+    referenceNode.parentNode.insertBefore(newNode, referenceNode.previousSibling);
+}
+function insertAsFirstChild(referenceNode, newNode) {
+    referenceNode.insertBefore(newNode, referenceNode.firstChild);
+}
+function insertAsLastChild(referenceNode, newNode) {
+    insertAfter(referenceNode.lastChild, newNode);
+}
