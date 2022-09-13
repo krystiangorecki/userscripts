@@ -422,13 +422,13 @@ function markExternalLinks() {
     var boxes = document.querySelectorAll("div.post_text");
     for (var i = 0; i < boxes.length; ++i) {
         var text = boxes[i].textContent;
-        if (text.indexOf("vtube.to") > -1) {
+        if (contains(text, "vtube.to")) {
             boxes[i].parentNode.style="border:2px solid gold";
-        } else if (text.indexOf("hexupload") > -1) {
+        } else if (contains(text, "hexupload")) {
             boxes[i].parentNode.style="border:2px solid #2aa86e";
-        } else if (text.indexOf("ddownload") > -1) {
+        } else if (contains(text, "ddownload")) {
             boxes[i].parentNode.style="border:2px solid #093094";
-        } else if (text.indexOf("rapidgator") > -1) {
+        } else if (contains(text, "rapidgator")) {
             boxes[i].parentNode.style="border:2px solid #bb4500";
         }
     }
@@ -445,4 +445,8 @@ function insertAsFirstChild(referenceNode, newNode) {
 }
 function insertAsLastChild(referenceNode, newNode) {
     insertAfter(referenceNode.lastChild, newNode);
+}
+
+function contains(haystack, needle){
+    return haystack.indexOf(needle) > -1;
 }
