@@ -2,7 +2,7 @@
 // @name         sxyp
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.4
+// @version      1.5
 // @description  "Do the difficult things while they are easy and do the great things while they are small."
 // @match        https://yp
 // @match        https://yp/o/*
@@ -19,6 +19,7 @@
 //v1.2 added direct links on movie page with separate scenes
 //v1.3 remove " and " from search query
 //v1.4 remove some unused code
+//v1.5 added hexupload
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
@@ -429,6 +430,8 @@ function markExternalLinks() {
             boxes[i].parentNode.style="border:2px solid #093094";
         } else if (text.indexOf("rapidgator") > -1) {
             boxes[i].parentNode.style="border:2px solid #bb4500";
+        } else if (text.indexOf("hexupload") > -1) {
+            boxes[i].parentNode.style="border:2px solid #2aa86e";
         }
     }
 }
