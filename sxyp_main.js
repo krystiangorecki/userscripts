@@ -424,14 +424,12 @@ function markExternalLinks() {
         var text = boxes[i].textContent;
         if (text.indexOf("vtube.to") > -1) {
             boxes[i].parentNode.style="border:2px solid gold";
-            continue;
-        }
-        if (text.indexOf("ddownload") > -1) {
+        } else if (text.indexOf("hexupload") > -1) {
+            boxes[i].parentNode.style="border:2px solid #2aa86e";
+        } else if (text.indexOf("ddownload") > -1) {
             boxes[i].parentNode.style="border:2px solid #093094";
         } else if (text.indexOf("rapidgator") > -1) {
             boxes[i].parentNode.style="border:2px solid #bb4500";
-        } else if (text.indexOf("hexupload") > -1) {
-            boxes[i].parentNode.style="border:2px solid #2aa86e";
         }
     }
 }
