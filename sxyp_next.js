@@ -87,7 +87,8 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
                 var $sizeElement = $page.find(selector);
                 var size = $sizeElement.text();
                 if (contains(href, 'hexupload.net')) {
-                    size = getStringByRegex(size, /\((.*)\)/i);
+                    size = size.substring(size.lastIndexOf('('));
+                    size = getStringByRegex(size, /\((.+?)\)/i);
                 }
                 if (size.length==0) {
                     size = "-";
@@ -117,6 +118,9 @@ function getMaxPage() {
     if (pagination != undefined && pagination.length > 0) {
         var lastPageLink = pagination[pagination.length-1].href;
         var maxPage = getStringByRegex(lastPageLink, /(\d+)$/i);
+        if (maxPage == undefined) {
+            maxPage = getStringByRegex(lastPageLink, /page=(\d+)/i);
+        }
         return maxPage;
     }
 }
@@ -587,8 +591,10 @@ function insertAsLastChild(referenceNode, newNode) {
 
 //* returns first capturing group */
 function getStringByRegex(text, regex){
-    // const regex = /\/\/(vid\d+)/i;
     var match = regex.exec(text);
+    if (match == null) {
+        return undefined;
+    }
     var result = match[1];
     return result;
 }
