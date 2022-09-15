@@ -2,19 +2,23 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.4
+// @version      1.5
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp/
 // @match        https://sxyp/o/*
 // @match        https://sxyp/*.html*
 // @match        https://sxyp/
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
-// @grant        GM.xmlHttpRequest
 // @grant        GM_addStyle
+// @grant        GM.xmlHttpRequest
+// @connect      streamtape.com
+// @connect      doodstream.com
+// @connect      dood.wf
 // @run-at       document-end
 // ==/UserScript==
 
-// TODO pages load correctly but I still have to add downlading movie sizes for new items while keeping download pending blocking list to avoid doubling moviesizes
+// v1.4 fixed redundant size loading for dynamically loaded pages
+// v1.5 full external sizes loading with CORS bypass
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
@@ -70,8 +74,14 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             selector = '.download-page';
         } else if (contains(href, 'rapidgator.net')) {
             selector = '.file-descr>div>div>strong';
-            // } else if (contains(href, 'doodstream.com')) {
-            //     selector = 'div.size'; // CORS!
+        } else if (contains(href, 'streamtape.com')) {
+            selector = '.subheading';
+            httpGETWithCORSbypass(href, selector, link);
+            return;
+        } else if (contains(href, 'doodstream.com') || contains(href, 'dood.wf')) {
+            selector = 'div.size';
+            httpGETWithCORSbypass(href, selector, link);
+            return;
         }
 
         if (selector==undefined) {
@@ -104,6 +114,29 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
     if (box != undefined) {
         box.classList.add('externalLinksSizesAlreadyLoaded');
     }
+}
+
+function httpGETWithCORSbypass(url, selector, link) {
+    GM.xmlHttpRequest({
+        method: "GET",
+        url: url,
+        onload: function(response) {
+            var dom2 = htmlToElement(response.responseText);
+            var size = dom2.querySelector(selector);
+            size = size.innerText;
+            link.innerText = link.innerText + " " + size;
+        },
+        // onerror: function(response) {
+        //     console.log(response);
+        // }
+    });
+}
+
+function htmlToElement(html) {
+    var template = document.createElement('template');
+    html = html.trim();
+    template.innerHTML = html;
+    return template.content;
 }
 
 function initLoadNextPage() {
@@ -457,6 +490,11 @@ function addSizesWhenBrowsing() {
 function addButtonToGetMovieSize(el) {
     var referenceNode = el.getElementsByClassName('post_time')[0];
     if (referenceNode == undefined) {
+        return;
+    }
+    var getMovieSizeButtonAlreadyExists = el.getElementsByClassName('get_movie_size');
+    if (getMovieSizeButtonAlreadyExists.length > 0) {
+        //skip adding another button when "load next" is clicked too fast
         return;
     }
     var newButton = document.createElement("button");
