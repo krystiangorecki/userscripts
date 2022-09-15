@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.5
+// @version      1.6
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp/
 // @match        https://sxyp/o/*
@@ -19,6 +19,7 @@
 
 // v1.4 fixed redundant size loading for dynamically loaded pages
 // v1.5 full external sizes loading with CORS bypass
+// v1.6 delayed line disappearance
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
@@ -273,7 +274,7 @@ function initLoadTimes() {
         // var endTime = performance.now();
         // console.log(`searching names took ${endTime - startTime} ms`);
         addHideRedButton();
-        setTimeout(clickHideRedButton, 1000);
+        // setTimeout(clickHideRedButton, 1000);
         if (autoloadWhiteSizes) {
             setTimeout(loadWhiteSizes, 2000);
         }
@@ -381,22 +382,22 @@ function drawLineBetween(el1, el2, lineClass){
 function attachShowHideListeners(el1, el2, lineClass){
     el1.addEventListener('mouseover', function handleMouseOver() {
         var lines = document.querySelectorAll('.' + lineClass);
-        lines.forEach(line => line.style.display = 'block');
+        lines.forEach(line => {line.style.display = 'block'});
     });
 
     el1.addEventListener('mouseout', function handleMouseOut() {
         var lines = document.querySelectorAll('.' + lineClass);
-        lines.forEach(line => line.style.display = 'none');
+        setTimeout(function() {lines.forEach(line => {line.style.display = 'none'});}, 1500);
     });
 
     el2.addEventListener('mouseover', function handleMouseOver() {
         var lines = document.querySelectorAll('.' + lineClass);
-        lines.forEach(line => line.style.display = 'block');
+        lines.forEach(line => {line.style.display = 'block'});
     });
 
     el2.addEventListener('mouseout', function handleMouseOut() {
         var lines = document.querySelectorAll('.' + lineClass);
-        lines.forEach(line => line.style.display = 'none');
+        setTimeout(function() {lines.forEach(line => {line.style.display = 'none'});}, 1500);
     });
 }
 
