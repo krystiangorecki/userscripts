@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.6
+// @version      1.7
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp/
 // @match        https://sxyp/o/*
@@ -14,6 +14,7 @@
 // @connect      streamtape.com
 // @connect      doodstream.com
 // @connect      dood.wf
+// @connect      upvideo.to
 // @run-at       document-end
 // ==/UserScript==
 
@@ -23,6 +24,7 @@
 // v1.7 fixed HTTP error handling
 // v1.7 handling links with two urls where only one of them contains movie size (streamtape, doodstream)
 // v1.7 handling pages with two forms where each of them contains size but selector is different (hexupload)
+// v1.7 added upvideo.to
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
@@ -80,6 +82,11 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             selector = '.file-descr>div>div>strong';
         } else if (contains(href, 'streamtape.com')) {
             selector = '.subheading';
+            href = href.replace('/e/','/v/');
+            httpGETWithCORSbypass(href, selector, link);
+            return;
+        } else if (contains(href, 'upvideo.to')) {
+            selector = '.size-f';
             href = href.replace('/e/','/v/');
             httpGETWithCORSbypass(href, selector, link);
             return;
@@ -148,6 +155,7 @@ function httpGETWithCORSbypass(url, selector, link) {
             var size = dom2.querySelector(selector);
             if (size!=null) {
                 size = size.innerText;
+                size = size.replace('(','').replace(')','');
             } else {
                 size = "-";
             }
