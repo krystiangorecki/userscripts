@@ -20,6 +20,9 @@
 // v1.4 fixed redundant size loading for dynamically loaded pages
 // v1.5 full external sizes loading with CORS bypass
 // v1.6 delayed line disappearance
+// v1.7 fixed HTTP error handling
+// v1.7 handling links with two urls where only one of them contains movie size (streamtape, doodstream)
+// v1.7 handling pages with two forms where each of them contains size but selector is different (hexupload)
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
@@ -72,15 +75,17 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         if (contains(href, 'ddownload.com')) {
             selector = 'span.file-size';
         } else if (contains(href, 'hexupload.net')) {
-            selector = '.download-page';
+            selector = ['span.h3.text-danger','.download-page'];
         } else if (contains(href, 'rapidgator.net')) {
             selector = '.file-descr>div>div>strong';
         } else if (contains(href, 'streamtape.com')) {
             selector = '.subheading';
+            href = href.replace('/e/','/v/');
             httpGETWithCORSbypass(href, selector, link);
             return;
         } else if (contains(href, 'doodstream.com') || contains(href, 'dood.wf')) {
             selector = 'div.size';
+            href = href.replace('/e/','/d/');
             httpGETWithCORSbypass(href, selector, link);
             return;
         }
@@ -89,25 +94,40 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return; //continue;
         }
 
+        var linkText = link.innerText;
+        link.innerText = linkText + " ...";
+
         $.ajax ( {
             type:       'GET',
             url:        href,
             dataType:   'html',
             success:    function (data) {
                 var $page = $(data);
-                var $sizeElement = $page.find(selector);
+                var $sizeElement;
+                if (selector instanceof Array) {
+                    var i=0;
+                    do {
+                        $sizeElement = $page.find(selector[i++]);
+                    } while($sizeElement.length==0 && i<selector.length);
+                } else {
+                    $sizeElement = $page.find(selector);
+                }
+
                 var size = $sizeElement.text();
                 if (contains(href, 'hexupload.net')) {
-                    size = size.substring(size.lastIndexOf('('));
-                    size = getStringByRegex(size, /\((.+?)\)/i);
+                    if (contains(size, '(')) {
+                        size = size.substring(size.lastIndexOf('('));
+                        size = getStringByRegex(size, /\((.+?)\)/i);
+                    }
                 }
                 if (size.length==0) {
                     size = "-";
                 }
-                link.innerText = link.innerText + " " + size;
+                link.innerText = linkText + " " + size;
             },
             error:  function (data) {
-                link.innerText = link.innerText + " x";
+                console.log("error for " + href);
+                link.innerText = linkText + " error!";
             }
         });
     });
@@ -118,18 +138,29 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
 }
 
 function httpGETWithCORSbypass(url, selector, link) {
+    var linkText = link.innerText;
+    link.innerText = linkText + " ...";
     GM.xmlHttpRequest({
         method: "GET",
         url: url,
         onload: function(response) {
             var dom2 = htmlToElement(response.responseText);
             var size = dom2.querySelector(selector);
-            size = size.innerText;
-            link.innerText = link.innerText + " " + size;
+            if (size!=null) {
+                size = size.innerText;
+            } else {
+                size = "-";
+            }
+            link.innerText = linkText + " " + size;
         },
-        // onerror: function(response) {
-        //     console.log(response);
-        // }
+        ontimeout: function(response) {
+            console.log('ontimeout');
+            link.innerText = linkText + " timeout!";
+        },
+        onerror: function(response) {
+            link.innerText = linkText + " error!";
+            console.log(response);
+        },
     });
 }
 
