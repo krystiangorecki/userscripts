@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.7
+// @version      1.8
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp/
 // @match        https://sxyp/o/*
@@ -17,7 +17,6 @@
 // @connect      upvideo.to
 // @run-at       document-end
 // ==/UserScript==
-
 // v1.4 fixed redundant size loading for dynamically loaded pages
 // v1.5 full external sizes loading with CORS bypass
 // v1.6 delayed line disappearance
@@ -25,6 +24,7 @@
 // v1.7 handling links with two urls where only one of them contains movie size (streamtape, doodstream)
 // v1.7 handling pages with two forms where each of them contains size but selector is different (hexupload)
 // v1.7 added upvideo.to
+// v1.8 lines with gradients, optimized loading sizes for next pages
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
@@ -204,6 +204,7 @@ function addLoadNextPageButton() {
     loadNextPageButton.setAttribute("id", "nextPageButton");
     loadNextPageButton.setAttribute("style", "width:10%; position:absolute;right:0px");
     loadNextPageButton.onclick = loadNextPage;
+
     var destination = document.getElementsByClassName('main_content')[0];
     if (destination != undefined) {
         insertAsFirstChild(destination, loadNextPageButton);
@@ -244,7 +245,7 @@ function loadNextPage() {
             var indexesToRemove = [];
             // find existing ones in the new ones and save index to delete to avoid deleting while iterating
             $newElements.each(function(i, newItem) {
-                if(newItem!=undefined) {
+                if (newItem!=undefined) {
                     var newHref = $(newItem).find('a.js-pop').first().attr('href');
                     var newMovieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
                     var exists = false;
@@ -266,18 +267,15 @@ function loadNextPage() {
             }
             $newElements.insertAfter($last);
             nextPageNumber+=30;
-            if (nextPageNumber <= maxPage) {
-                unblockButton();
-                resetGreen();
-                resetRed();
-            } else {
-                $('#nextPageButton').val("---");
-            }
-
-            //debugger;
+            resetGreen();
+            resetRed();
             //reinitialize file sizes check
             initLoadTimes();
-
+            if (nextPageNumber > maxPage) {
+                $('#nextPageButton').val("---");
+            } else {
+                unblockButton();
+            }
         }
     } );
 }
@@ -376,49 +374,47 @@ function resetGreen() {
 
 
 function draw() {
-    var boxes = document.querySelectorAll('.movieSize');
     map.forEach((sizes, duration) => {
         if (sizes.length == 1) {
             return;
         }
         var maxSize = getMaxNumber(sizes);
         var els = mapEl.get(duration);
-
+        var lineClass = 'line'+duration.replaceAll(':','-');
         for (var i = 0 ; i < sizes.length ; i++) {
-            if (maxSize == sizes[i]) {
+            if (sizes[i] == maxSize) {
                 for (var j = 0 ; j < sizes.length ; j++) {
                     if (i == j) {
                         continue;
                     }
-                    var lineClass = 'line'+duration.replaceAll(':','-');
-                    drawLineBetween(els[i].getElementsByClassName('post_time')[0], els[j].getElementsByClassName('post_time')[0], lineClass);
+
+                    var bothSizesAreMaxSize = false;
+                    if (sizes[j] == maxSize) {
+                        bothSizesAreMaxSize = true;
+                    }
+                    drawLineBetween(els[i].getElementsByClassName('post_time')[0], els[j].getElementsByClassName('post_time')[0], lineClass, bothSizesAreMaxSize);
                 }
             }
         }
     });
 }
 
-function drawLineBetween(el1, el2, lineClass){
+function drawLineBetween(el1, el2, lineClass, noGradient) {
     var rect1 = el1.getBoundingClientRect();
     var rect2 = el2.getBoundingClientRect();
     var x1 = rect1.x+pageXOffset;
     var y1 = rect1.y+window.pageYOffset;
     var x2 = rect2.x+pageXOffset;
     var y2 = rect2.y+window.pageYOffset;
-    if (x2 < x1) {
-        var tmp;
-        tmp = x2 ; x2 = x1 ; x1 = tmp;
-        tmp = y2 ; y2 = y1 ; y1 = tmp;
-    }
     x1 = Math.floor(x1);
     y1 = Math.floor(y1);
     x2 = Math.floor(x2);
     y2 = Math.floor(y2);
-    linedraw(x1, y1,x2, y2, lineClass);
+    linedraw(x1, y1, x2, y2, lineClass, noGradient);
     attachShowHideListeners(el1, el2, lineClass);
 }
 
-function attachShowHideListeners(el1, el2, lineClass){
+function attachShowHideListeners(el1, el2, lineClass) {
     el1.addEventListener('mouseover', function handleMouseOver() {
         var lines = document.querySelectorAll('.' + lineClass);
         lines.forEach(line => {line.style.display = 'block'});
@@ -440,11 +436,13 @@ function attachShowHideListeners(el1, el2, lineClass){
     });
 }
 
-function linedraw(x1, y1, x2, y2, lineClass) {
+function linedraw(x1, y1, x2, y2, lineClass, noGradient) {
+    var switchGradientDirection = false;
     if (x2 < x1) {
         var tmp;
         tmp = x2 ; x2 = x1 ; x1 = tmp;
         tmp = y2 ; y2 = y1 ; y1 = tmp;
+        switchGradientDirection = true;
     }
     x1 = Math.floor(x1);
     y1 = Math.floor(y1);
@@ -457,7 +455,17 @@ function linedraw(x1, y1, x2, y2, lineClass) {
 
     var destination = document.querySelector('#linesContainer');
     // console.log("creating line"+x1+y1+x2+y2);
-    destination.innerHTML += "<div class='"+lineClass+"' style='display:none; position: absolute; z-index:10; transform-origin: top left; transform: rotate(" + degree + "deg); width: " + lineLength + "px; height: 2px; background: yellow; top: " + y1 + "px; left: " + x1 + "px;'></div>";
+    var backgroundCSS;
+    if (noGradient == true) {
+        backgroundCSS = 'background: yellow;';
+    } else {
+        if (switchGradientDirection) {
+            backgroundCSS = 'background: linear-gradient(90deg, rgba(255,0,0,1) 0%, rgba(255,255,0,1) 100%);';
+        } else {
+            backgroundCSS = 'background: linear-gradient(90deg, rgba(255,255,0,1) 0%, rgba(255,0,0,1) 100%);';
+        }
+    }
+    destination.innerHTML += "<div class='"+lineClass+"' style='display: none; position: absolute; z-index:10; transform-origin: top left; transform: rotate(" + degree + "deg); width: " + lineLength + "px; height: 3px; " + backgroundCSS + " top: " + y1 + "px; left: " + x1 + "px;'></div>";
 
 }
 
@@ -519,7 +527,7 @@ function addSizesWhenBrowsing() {
     var selStartTime, selEndTime;
     //selStartTime = performance.now();
     boxes.forEach(el => {
-        if(el.querySelector('.movieSize') == undefined){
+        if (el.querySelector('.movieSize') == undefined) {
             addButtonToGetMovieSize(el);
         }
     });
@@ -668,7 +676,7 @@ function insertAsLastChild(referenceNode, newNode) {
 }
 
 //* returns first capturing group */
-function getStringByRegex(text, regex){
+function getStringByRegex(text, regex) {
     var match = regex.exec(text);
     if (match == null) {
         return undefined;
@@ -677,6 +685,6 @@ function getStringByRegex(text, regex){
     return result;
 }
 
-function contains(haystack, needle){
+function contains(haystack, needle) {
     return haystack.indexOf(needle) > -1;
 }
