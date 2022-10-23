@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.8
+// @version      1.82
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp/
 // @match        https://sxyp/o/*
