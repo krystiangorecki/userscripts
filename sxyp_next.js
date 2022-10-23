@@ -14,6 +14,7 @@
 // @connect      streamtape.com
 // @connect      doodstream.com
 // @connect      dood.wf
+// @connect      dood.re
 // @connect      upvideo.to
 // @run-at       document-end
 // ==/UserScript==
@@ -25,6 +26,8 @@
 // v1.7 handling pages with two forms where each of them contains size but selector is different (hexupload)
 // v1.7 added upvideo.to
 // v1.8 lines with gradients, optimized loading sizes for next pages
+// v1.81 fixed handling of Not Found for dood
+// v1.82 dood.re + hexupload fixes
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
@@ -123,6 +126,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
                 var size = $sizeElement.text();
                 if (contains(href, 'hexupload.net')) {
                     if (contains(size, '(')) {
+                        size = size.substring(0, size.lastIndexOf('B)') + 2);
                         size = size.substring(size.lastIndexOf('('));
                         size = getStringByRegex(size, /\((.+?)\)/i);
                     }
@@ -155,7 +159,11 @@ function httpGETWithCORSbypass(url, selector, link) {
             var size = dom2.querySelector(selector);
             if (size!=null) {
                 size = size.innerText;
+                size = size.trim();
                 size = size.replace('(','').replace(')','');
+                if (size.length == 0) {
+                    size = "-";
+                }
             } else {
                 size = "-";
             }
@@ -313,7 +321,7 @@ function initLoadTimes() {
         addHideRedButton();
         // setTimeout(clickHideRedButton, 1000);
         if (autoloadWhiteSizes) {
-            setTimeout(loadWhiteSizes, 2000);
+            setTimeout(loadWhiteSizes, 2500);
         }
     }
 }
