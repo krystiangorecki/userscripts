@@ -2,7 +2,7 @@
 // @name         sxyp
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.5
+// @version      1.6
 // @description  "Do the difficult things while they are easy and do the great things while they are small."
 // @match        https://yp
 // @match        https://yp/o/*
@@ -20,6 +20,7 @@
 //v1.3 remove " and " from search query
 //v1.4 remove some unused code
 //v1.5 added hexupload
+//v1.6 added external favicons + removed unncessary elements + small fixes
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
@@ -29,7 +30,7 @@ GM_addStyle(' .sharing_toolbox {    margin-top: 5px;    text-align: right;    po
     'use strict';
 
     redirectIfSearchQueryContainsAnd();
-
+    removeUnnecessaryElements();
     copyMovieSizeToTheTop();
     markLesAndSolo();
     markExternalLinks();
@@ -52,10 +53,22 @@ GM_addStyle(' .sharing_toolbox {    margin-top: 5px;    text-align: right;    po
     removeAllIframes();
 })();
 
+function removeUnnecessaryElements() {
+    //remove Watch Later icons (available only for logged in users)
+    var clockIcons = document.querySelectorAll(".pes_wl");
+    for (let i = 0; i < clockIcons.length; ++i) {
+        clockIcons[i].remove();
+    }
+    // remove plus icon by the names to submit another name (available only for logged in users)
+    var plusIcons = document.querySelectorAll(".sub_add_nl");
+    for (let i = 0; i < plusIcons.length; ++i) {
+        plusIcons[i].remove();
+    }
+}
 
 function redirectIfSearchQueryContainsAnd() {
     var url = window.location.href;
-    if (url.indexOf('-and-')>10 || url.indexOf('-And-')>10  || url.indexOf('%20And%20')>10 || url.indexOf('-amp-')>10 ) {
+    if (url.indexOf('-and-')>10 || url.indexOf('-And-')>10 || url.indexOf('%20And%20')>10 || url.indexOf('-amp-')>10 ) {
         var newurl = url.replace('-and-', '-').replace('-And-', '-').replace('%20And%20', '-').replace('-amp-', ' ');
         window.location = newurl;
     }
@@ -115,30 +128,34 @@ function removeLayerOverThePlayer() {
 
 function redirectToDVMirrorSite() {
 
-    // if post not found
-    var insertAfterElement = document.querySelector('.main_content>span.page_message');
-    if (insertAfterElement == null) {
+    var url = window.location.pathname;
+    var match = url.match(/([a-fA-F\d]{10,15}).html/);
+    if (match == undefined) {
         return;
     }
-    var url = window.location.pathname;
-    var movieId = url.match(/([a-fA-F\d]{10,15}).html/)[1];
+    var movieId = match[1];
     var buttonId = "gotoMirror";
-    addButtonAfter('[ GO TO MIRROR ]', "http://" + decodeURIComponent('%64%65%75%74%73%63%68%6'+'5%2e%76%69%64%65%6f') + "/Main/" + movieId, buttonId, '', insertAfterElement);
+    var href = "http://" + decodeURIComponent('%64%65%75%74%73%63%68%6'+'5%2e%76%69%64%65%6f') + "/Main/" + movieId
 
+    // if Post Not Found
+    var insertAfterElement = document.querySelector('.page_message');
+    if (insertAfterElement != null) {
+        addButtonAfter('[ GO TO MIRROR ]', href, buttonId, '', insertAfterElement);
+        return;
+    }
+
+    insertAfterElement = document.querySelector('.post_text');
+    if (insertAfterElement != null) {
+        addButtonAfter('[ GO TO MIRROR ]', href, buttonId, '', insertAfterElement);
+        return;
+    }
 
     //if content removed
-    var contentRemoved = document.querySelector('span[style="position: relative;top:20%;font-size: 25px;font-weight: bold;"]');
-    if (contentRemoved == null) {
-        return;
-    }
-    insertAfterElement =document.querySelector('span[style="position: relative;top:20%;font-size: 25px;font-weight: bold;"]');
+    insertAfterElement = document.querySelector('span[style="position: relative;top:20%;font-size: 25px;font-weight: bold;"]');
     if (insertAfterElement == null) {
         return;
     }
-    url = window.location.pathname;
-    movieId = url.match(/([a-fA-F\d]{10,15}).html/)[1];
-    buttonId = "gotoMirror";
-    addButtonAfter('[ GO TO MIRROR ]', "http://" + decodeURIComponent('%64%65%75%74%73%63%6'+'8%65%2e%76%69%64%65%6f') + "/Main/" + movieId, buttonId, '', insertAfterElement);
+    addButtonAfter('[ GO TO MIRROR ]', href, buttonId, '', insertAfterElement);
 
 }
 
@@ -148,7 +165,7 @@ function delayedLayerRemoval() {
         if (divs.length>0) {
             divs[divs.length].outerHTML='';
         }
-    }, 4000);
+    }, 3000);
 }
 
 function player() {
@@ -420,18 +437,54 @@ function markLesAndSolo() {
 
 function markExternalLinks() {
     var boxes = document.querySelectorAll("div.post_text");
+    var imgTemplate = '<img src="https://www1.ddownload.com/images/favicon.ico" style="height: 16px">';
     for (var i = 0; i < boxes.length; ++i) {
         var text = boxes[i].textContent;
+        var newStyle;
+
+        // mark with border color
         if (contains(text, "vtube.to")) {
-            boxes[i].parentNode.style="border:2px solid gold";
+            newStyle ="border:2px solid gold";
         } else if (contains(text, "hexupload")) {
-            boxes[i].parentNode.style="border:2px solid #2aa86e";
+            newStyle ="border:2px solid #2aa86e";
         } else if (contains(text, "ddownload")) {
-            boxes[i].parentNode.style="border:2px solid #093094";
+            newStyle ="border:2px solid #093094";
         } else if (contains(text, "rapidgator")) {
-            boxes[i].parentNode.style="border:2px solid #bb4500";
+            newStyle ="border:2px solid #bb4500";
+        }
+        boxes[i].parentNode.style = newStyle;
+
+        // mark with favicon
+        var uploaderName = boxes[i].parentElement.querySelector('.a_name');
+        var newEl;
+        if (contains(text, "sbembed")) {
+            newEl = createIconImg("https://sbembed.com/favicon.ico");
+            insertAfter(uploaderName.parentElement, newEl);
+        }
+        if (contains(text, "ddownload")) {
+            newEl = createIconImg("http://ddownload.com/favicon.ico");
+            insertAfter(uploaderName.parentElement, newEl);
+        }
+        if (contains(text, " dood")) {
+            newEl = createIconImg("http://www.google.com/s2/favicons?domain=dood.re");
+            insertAfter(uploaderName.parentElement, newEl);
+        }
+        if (contains(text, "rapidgator")) {
+            newEl = createIconImg("http://www.google.com/s2/favicons?domain=rapidgator.net");
+            insertAfter(uploaderName.parentElement, newEl);
+        }
+        if (contains(text, "hexupload")) {
+            newEl = createIconImg("http://www.google.com/s2/favicons?domain=hexupload.net");
+            insertAfter(uploaderName.parentElement, newEl);
         }
     }
+}
+
+function createIconImg(src) {
+    var newImg = document.createElement("img");
+    newImg.src=src;
+    newImg.style = 'height: 16px; margin-left:5px';
+    return newImg;
 }
 
 function insertAfter(referenceNode, newNode) {
