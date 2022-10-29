@@ -440,7 +440,7 @@ function markExternalLinks() {
     var imgTemplate = '<img src="https://www1.ddownload.com/images/favicon.ico" style="height: 16px">';
     for (var i = 0; i < boxes.length; ++i) {
         var text = boxes[i].textContent;
-        var newStyle;
+        var newStyle = "";
 
         // mark with border color
         if (contains(text, "vtube.to")) {
