@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.82
+// @version      1.85
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp/
 // @match        https://sxyp/o/*
@@ -16,6 +16,7 @@
 // @connect      dood.wf
 // @connect      dood.re
 // @connect      upvideo.to
+// @connect      highload.to
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -28,10 +29,18 @@
 // v1.8 lines with gradients, optimized loading sizes for next pages
 // v1.81 fixed handling of Not Found for dood
 // v1.82 dood.re + hexupload fixes
+// v1.83 nice icons with size above title
+// v1.84 highload.to
+// v1.85 hidered() by mistake removed red class
+// TODO clickable icons
+
+
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
-
+GM_addStyle(' .a_name {  letter-spacing: -1px;  }');
+GM_addStyle(' .pes_author_div { color: #6ddede; font-size: 10px; letter-spacing: -1px; }');
+GM_addStyle(' .pes_author_div .a_name {font-size:9px; margin-left:0px}');
 
 var autoloadForEqualDurationTimes = true;
 var autoloadWhiteSizes = true;
@@ -46,14 +55,24 @@ var pageUrl = window.location.href;
     'use strict';
 
     initLoadNextPage();
+
     initLoadTimes();
     loadSizesOfExternalLinks();
 })();
 
+var imgTemplate = '<img src="https://www1.ddownload.com/images/favicon.ico" style="height: 16px">';
+
 function loadSizesOfExternalLinks() {
-    var allExternalLinks = document.querySelectorAll('.post_el_wrap div.post_text a.extlink');
-    if (allExternalLinks.length > 0) {
+
+    var isSingleMoviePage = document.querySelector(".post_el_wrap") != undefined;
+
+    if (isSingleMoviePage) {
         // single movie page, loading all at once
+        var allExternalLinks = document.querySelectorAll('.post_el_wrap div.post_text a.extlink');
+        allExternalLinks.forEach((link, index) => {
+            var href = link.href;
+            addIconWithoutSize(undefined, href, index);
+        });
         loadSizesForAllExternalLinks(undefined, allExternalLinks);
     } else {
         // page with boxes, adding only listeners
@@ -61,10 +80,101 @@ function loadSizesOfExternalLinks() {
         allBoxes.forEach(box => {
             var externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
-                box.addEventListener('mouseover', (event) => {loadSizesForAllExternalLinks(box, externalLinksForThisBox)});
+                externalLinksForThisBox.forEach((link, index) => {
+                    var href = link.href;
+                    addIconWithoutSize(box, href, index);
+                });
+                box.parentElement.addEventListener('mouseover', (event) => {loadSizesForAllExternalLinks(box, externalLinksForThisBox)});
             }
         });
     }
+}
+
+function addSizeToIcon(box, href, size, index) {
+
+    var movieId = getMovieId(box);
+    var iconId = '#icon' + index + '-' + movieId;
+
+    var iconElement = document.querySelector(iconId);
+    var sizeElement = document.createElement("span");
+
+    size = size.replace('B','');
+    if(contains(size, '.')){
+        // cut number after the decimal point if it's MB, but skip for GB
+        if(contains(size, 'M')){
+            size = size.replace(/\.\d+/,'');
+        }
+    }
+    sizeElement.textContent = size;
+    insertAfter(iconElement, sizeElement);
+}
+
+function getContainer(box) {
+    var container;
+    var singleMoviePage = box == undefined;
+    if (singleMoviePage) {
+        container = document;
+    } else {
+        container = box.parentElement;
+    }
+    return container;
+}
+
+function getMovieId(box) {
+    var container = getContainer(box);
+    var movieHref= container.querySelector('a.js-pop').href;
+    var movieId = getStringByRegex(movieHref,/\/([0-9a-f]+)\.html/);
+    return movieId;
+}
+
+function addIconWithoutSize(box, href, index) {
+
+    var movieId = getMovieId(box);
+    var container = getContainer(box);
+    var uploaderName = container.querySelector('.a_name');
+
+    var newEl;
+    var iconId = "icon" + index + '-' + movieId;
+    if (contains(href, "sbembed")) {
+        newEl = createIconImg("https://sbembed.com/favicon.ico", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+    if (contains(href, "ddownload")) {
+        newEl = createIconImg("http://ddownload.com/favicon.ico", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+    if (contains(href, "dood")) {
+        newEl = createIconImg("http://doodstream.com/favicon.ico", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+    if (contains(href, "rapidgator")) {
+        newEl = createIconImg("http://www.google.com/s2/favicons?domain=rapidgator.net", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+    if (contains(href, "hexupload")) {
+        newEl = createIconImg("http://www.google.com/s2/favicons?domain=hexupload.net", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+    if (contains(href, "streamtape")) {
+        newEl = createIconImg("http://www.google.com/s2/favicons?domain=streamtape.com", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+    if (contains(href, "highload")) {
+        newEl = createIconImg("https://highload.to/favicon.svg", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+    if (contains(href, "upvideo")) {
+        newEl = createIconImg("https://upvideo.to/favicon.ico", iconId);
+        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+    }
+}
+
+function createIconImg(src, id) {
+    var newImg = document.createElement("img");
+    newImg.src = src;
+    newImg.id = id;
+    newImg.style = 'height: 16px; margin-left:3px; margin-right:0px;color:#6ddede';
+    return newImg;
 }
 
 function loadSizesForAllExternalLinks(box, externalLinks) {
@@ -74,7 +184,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         }
     }
 
-    externalLinks.forEach(link => {
+    externalLinks.forEach((link, index) => {
         var href = link.href;
         var selector;
         if (contains(href, 'ddownload.com')) {
@@ -83,20 +193,24 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             selector = ['span.h3.text-danger','.download-page'];
         } else if (contains(href, 'rapidgator.net')) {
             selector = '.file-descr>div>div>strong';
+        } else if (contains(href, 'highload.to')) {
+            selector = '.subheading';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         } else if (contains(href, 'streamtape.com')) {
             selector = '.subheading';
             href = href.replace('/e/','/v/');
-            httpGETWithCORSbypass(href, selector, link);
+            httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'upvideo.to')) {
             selector = '.size-f';
             href = href.replace('/e/','/v/');
-            httpGETWithCORSbypass(href, selector, link);
+            httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'doodstream.com') || contains(href, 'dood.wf')) {
             selector = 'div.size';
             href = href.replace('/e/','/d/');
-            httpGETWithCORSbypass(href, selector, link);
+            httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         }
 
@@ -131,10 +245,13 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
                         size = getStringByRegex(size, /\((.+?)\)/i);
                     }
                 }
-                if (size.length==0) {
+                if (size.length==0 || contains(size, 'File Not Found')) {
                     size = "-";
                 }
                 link.innerText = linkText + " " + size;
+
+                addSizeToIcon(box, href, size, index);
+
             },
             error:  function (data) {
                 console.log("error for " + href);
@@ -148,7 +265,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
     }
 }
 
-function httpGETWithCORSbypass(url, selector, link) {
+function httpGETWithCORSbypass(url, selector, link, box, index) {
     var linkText = link.innerText;
     link.innerText = linkText + " ...";
     GM.xmlHttpRequest({
@@ -157,24 +274,25 @@ function httpGETWithCORSbypass(url, selector, link) {
         onload: function(response) {
             var dom2 = htmlToElement(response.responseText);
             var size = dom2.querySelector(selector);
-            if (size!=null) {
+            if (size != null) {
                 size = size.innerText;
                 size = size.trim();
                 size = size.replace('(','').replace(')','');
-                if (size.length == 0) {
+                if (size.length == 0 || contains(size, 'Earn money') || contains(size, 'File Not Found') || contains(size, 'deleted')) {
                     size = "-";
                 }
             } else {
                 size = "-";
             }
             link.innerText = linkText + " " + size;
+            addSizeToIcon(box, link.href, size, index);
         },
         ontimeout: function(response) {
             console.log('ontimeout');
             link.innerText = linkText + " timeout!";
         },
         onerror: function(response) {
-            link.innerText = linkText + " error!";
+            link.innerText = linkText + " error: " + response.error;
             console.log(response);
         },
     });
@@ -367,12 +485,12 @@ function loadWhiteSizes() {
 
 function hideRed() {
     var redLabels = document.querySelectorAll('.red');
-    redLabels.forEach(label => {label.parentElement.parentElement.style.opacity = '0.3'; label.classList.remove('red');} );
+    redLabels.forEach(label => {label.parentElement.parentElement.style.opacity = '0.3'; } );
 }
 
 function resetRed() {
     var redLabels = document.querySelectorAll('.red');
-    redLabels.forEach(label => {label.parentElement.parentElement.style.opacity = '1'; label.classList.remove('red');} );
+    redLabels.forEach(label => {label.parentElement.parentElement.style.opacity = '1'; label.classList.remove('red'); } );
 }
 
 function resetGreen() {
