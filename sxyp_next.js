@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.85
+// @version      1.88
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp/
 // @match        https://sxyp/o/*
@@ -32,6 +32,9 @@
 // v1.83 nice icons with size above title
 // v1.84 highload.to
 // v1.85 hidered() by mistake removed red class
+// v1.86 unrecognized hostings + optimized
+// v1.87 autofix some links from /e/ to /d/ to see the filesizes
+// v1.88 new hostings
 // TODO clickable icons
 
 
@@ -63,17 +66,25 @@ var pageUrl = window.location.href;
 var imgTemplate = '<img src="https://www1.ddownload.com/images/favicon.ico" style="height: 16px">';
 
 function loadSizesOfExternalLinks() {
+    var postBoxes = document.querySelectorAll(".post_el_wrap");
+    var isSingleMoviePage = postBoxes.length == 1;
+    var isBlogPage = postBoxes.length >1;
 
-    var isSingleMoviePage = document.querySelector(".post_el_wrap") != undefined;
-
-    if (isSingleMoviePage) {
-        // single movie page, loading all at once
-        var allExternalLinks = document.querySelectorAll('.post_el_wrap div.post_text a.extlink');
-        allExternalLinks.forEach((link, index) => {
-            var href = link.href;
-            addIconWithoutSize(undefined, href, index);
+    if (isSingleMoviePage || isBlogPage) {
+        // single movie page or blog page, loading all at once
+        postBoxes.forEach(postBox => {
+            var allExternalLinks = postBox.querySelectorAll('.post_el_wrap div.post_text a.extlink');
+            if (allExternalLinks.length > 0) {
+                let movieId = getMovieId(postBox);
+                let uploaderName = postBox.querySelector('.a_name');
+                let destinationElement = uploaderName.parentElement.parentElement;
+                allExternalLinks.forEach((link, index) => {
+                    var href = link.href;
+                    addIconWithoutSize(movieId, href, index, destinationElement);
+                });
+            }
+            loadSizesForAllExternalLinks(postBox, allExternalLinks);
         });
-        loadSizesForAllExternalLinks(undefined, allExternalLinks);
     } else {
         // page with boxes, adding only listeners
         var allBoxes = document.querySelectorAll('div.post_text');
@@ -82,7 +93,11 @@ function loadSizesOfExternalLinks() {
             if (externalLinksForThisBox.length > 0) {
                 externalLinksForThisBox.forEach((link, index) => {
                     var href = link.href;
-                    addIconWithoutSize(box, href, index);
+                    let movieId = getMovieId(box);
+                    let container = getContainer(box);
+                    let uploaderName = container.querySelector('.a_name');
+                    let destinationElement = uploaderName.parentElement.parentElement;
+                    addIconWithoutSize(movieId, href, index, destinationElement);
                 });
                 box.parentElement.addEventListener('mouseover', (event) => {loadSizesForAllExternalLinks(box, externalLinksForThisBox)});
             }
@@ -99,9 +114,9 @@ function addSizeToIcon(box, href, size, index) {
     var sizeElement = document.createElement("span");
 
     size = size.replace('B','');
-    if(contains(size, '.')){
-        // cut number after the decimal point if it's MB, but skip for GB
-        if(contains(size, 'M')){
+    if (contains(size, '.')) {
+        // truncate number after the decimal point if it's MB, but skip for GB
+        if (contains(size, 'M')) {
             size = size.replace(/\.\d+/,'');
         }
     }
@@ -109,9 +124,8 @@ function addSizeToIcon(box, href, size, index) {
     insertAfter(iconElement, sizeElement);
 }
 
-function getContainer(box) {
+function getContainer(box, singleMoviePage) {
     var container;
-    var singleMoviePage = box == undefined;
     if (singleMoviePage) {
         container = document;
     } else {
@@ -121,51 +135,65 @@ function getContainer(box) {
 }
 
 function getMovieId(box) {
-    var container = getContainer(box);
-    var movieHref= container.querySelector('a.js-pop').href;
+    var el = box.querySelector('div[data-postid]');
+    if (el != undefined) {
+        var movieIdFromData = el.dataset.postid;
+        if (movieIdFromData != undefined) {
+            return movieIdFromData;
+        }
+    }
+    var movieHref = box.parentElement.querySelector('a.js-pop').href;
     var movieId = getStringByRegex(movieHref,/\/([0-9a-f]+)\.html/);
     return movieId;
 }
 
-function addIconWithoutSize(box, href, index) {
-
-    var movieId = getMovieId(box);
-    var container = getContainer(box);
-    var uploaderName = container.querySelector('.a_name');
+function addIconWithoutSize(movieId, href, index, destinationElement) {
 
     var newEl;
     var iconId = "icon" + index + '-' + movieId;
     if (contains(href, "sbembed")) {
         newEl = createIconImg("https://sbembed.com/favicon.ico", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
-    }
-    if (contains(href, "ddownload")) {
-        newEl = createIconImg("http://ddownload.com/favicon.ico", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
-    }
-    if (contains(href, "dood")) {
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "ddownload")) {
+        var iconLink = "http://ddownload.com/favicon.ico";
+        if (contains(href, 'p6zkh48nakez')) {
+            iconLink = 'https://via.placeholder.com/16/f00?text=%20';
+        }
+        newEl = createIconImg(iconLink, iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "dood")) {
         newEl = createIconImg("http://doodstream.com/favicon.ico", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
-    }
-    if (contains(href, "rapidgator")) {
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "rapidgator")) {
         newEl = createIconImg("http://www.google.com/s2/favicons?domain=rapidgator.net", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
-    }
-    if (contains(href, "hexupload")) {
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "hexupload")) {
         newEl = createIconImg("http://www.google.com/s2/favicons?domain=hexupload.net", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
-    }
-    if (contains(href, "streamtape")) {
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "streamtape")) {
         newEl = createIconImg("http://www.google.com/s2/favicons?domain=streamtape.com", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
-    }
-    if (contains(href, "highload")) {
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "highload")) {
         newEl = createIconImg("https://highload.to/favicon.svg", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
-    }
-    if (contains(href, "upvideo")) {
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "vtube.to")) {
+        newEl = createIconImg("https://vtube.to/src/img-min/logo/favicon.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "upvideo")) {
         newEl = createIconImg("https://upvideo.to/favicon.ico", iconId);
-        insertAsLastChild(uploaderName.parentElement.parentElement, newEl);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "filemoon")) {
+        newEl = createIconImg("https://filemoon.sx/assets/images/favicon/favicon-16x16.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "streamz.ws")) {
+        newEl = createIconImg("https://streamz.ws/g/favicon-16x16.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "streamcrypt.net")) {
+        newEl = createIconImg("https://streamcrypt.net/logo.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else {
+        newEl = document.createTextNode("[?]");
+        insertAsLastChild(destinationElement, newEl);
     }
 }
 
@@ -200,21 +228,27 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         } else if (contains(href, 'streamtape.com')) {
             selector = '.subheading';
             href = href.replace('/e/','/v/');
+            // fix to show filesizes
+            link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'upvideo.to')) {
             selector = '.size-f';
             href = href.replace('/e/','/v/');
+            // fix to show filesizes
+            link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'doodstream.com') || contains(href, 'dood.wf')) {
             selector = 'div.size';
             href = href.replace('/e/','/d/');
+            // fix to show filesizes
+            link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         }
 
-        if (selector==undefined) {
+        if (selector == undefined) {
             return; //continue;
         }
 
@@ -232,7 +266,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
                     var i=0;
                     do {
                         $sizeElement = $page.find(selector[i++]);
-                    } while($sizeElement.length==0 && i<selector.length);
+                    } while($sizeElement.length == 0 && i < selector.length);
                 } else {
                     $sizeElement = $page.find(selector);
                 }
@@ -245,7 +279,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
                         size = getStringByRegex(size, /\((.+?)\)/i);
                     }
                 }
-                if (size.length==0 || contains(size, 'File Not Found')) {
+                if (size.length == 0 || contains(size, 'File Not Found')) {
                     size = "-";
                 }
                 link.innerText = linkText + " " + size;
@@ -371,7 +405,7 @@ function loadNextPage() {
             var indexesToRemove = [];
             // find existing ones in the new ones and save index to delete to avoid deleting while iterating
             $newElements.each(function(i, newItem) {
-                if (newItem!=undefined) {
+                if (newItem != undefined) {
                     var newHref = $(newItem).find('a.js-pop').first().attr('href');
                     var newMovieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
                     var exists = false;
@@ -625,7 +659,7 @@ function checkDurations() {
             var duration2 = durationBox2.innerText;
             //console.log('checking ' + duration + ' == ' + duration2);
             if (duration == duration2) {
-                if (el2.querySelector('.movieSize')!=undefined) {
+                if (el2.querySelector('.movieSize') != undefined) {
                     var button2 = el2.querySelector('.get_movie_size');
                     if (button2 != undefined) {
                         found = true;
@@ -635,7 +669,7 @@ function checkDurations() {
             }
         }
         if (found) {
-            if (el2.querySelector('.movieSize')!=undefined) {
+            if (el2.querySelector('.movieSize') != undefined) {
                 var button = el.querySelector('.get_movie_size');
                 if (button != undefined) {
                     button.click();
