@@ -17,6 +17,7 @@
 // @connect      dood.re
 // @connect      upvideo.to
 // @connect      highload.to
+// @connect      rapidgator.net
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -35,6 +36,8 @@
 // v1.86 unrecognized hostings + optimized
 // v1.87 autofix some links from /e/ to /d/ to see the filesizes
 // v1.88 new hostings
+// v1.89 progress numbers updated for multiple pages
+// v1.90 handled rapidgator error
 // TODO clickable icons
 
 
@@ -57,11 +60,32 @@ var pageUrl = window.location.href;
 (function() {
     'use strict';
 
+    addVerticalProgressNumbers();
     initLoadNextPage();
 
     initLoadTimes();
     loadSizesOfExternalLinks();
 })();
+
+
+function addVerticalProgressNumbers() {
+
+    var existingNumbers = document.querySelectorAll('.progressNumber');
+    for (let number of existingNumbers) {
+        number.remove();
+    }
+
+    var boxes = document.querySelectorAll('div.post_el_small');
+    for (var i = 1 ; i < boxes.length ; i++) {
+        if ((i+1)%3 == 0) {
+            var newEl = document.createElement("span");
+            newEl.innerText = '' + (i+1);
+            newEl.classList.add('progressNumber');
+            insertAfter(boxes[i], newEl);
+        }
+    }
+}
+
 
 var imgTemplate = '<img src="https://www1.ddownload.com/images/favicon.ico" style="height: 16px">';
 
@@ -221,6 +245,8 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             selector = ['span.h3.text-danger','.download-page'];
         } else if (contains(href, 'rapidgator.net')) {
             selector = '.file-descr>div>div>strong';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         } else if (contains(href, 'highload.to')) {
             selector = '.subheading';
             httpGETWithCORSbypass(href, selector, link, box, index);
@@ -431,6 +457,7 @@ function loadNextPage() {
             resetRed();
             //reinitialize file sizes check
             initLoadTimes();
+            addVerticalProgressNumbers();
             if (nextPageNumber > maxPage) {
                 $('#nextPageButton').val("---");
             } else {
