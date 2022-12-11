@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.92
+// @version      1.93
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp*/
 // @match        https://sxyp*/o/*
@@ -43,6 +43,7 @@
 // v1.90 handled rapidgator error
 // v1.91 fixed problem with multiple sizes loaded at once
 // v1.92 sorting by time+size or by size, loading pages on *asm/ pages
+// v1.93 sorting fix to keep sorting bar at the top, removing old lines before drawing the new ones
 // TODO clickable icons
 
 
@@ -83,6 +84,7 @@ function addButtonToSortByTimeAndSize() {
     newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
 
     newButton.addEventListener('click', function(event) {
+        removeVerticalProgressNumbers();
         doSortByTimeAndSize();
         resetGreen();
         resetRed();
@@ -118,6 +120,7 @@ function addButtonToSortBySize() {
     newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
 
     newButton.addEventListener('click', function(event) {
+        removeVerticalProgressNumbers();
         doSortBySize();
         resetGreen();
         resetRed();
@@ -155,6 +158,7 @@ function doSortBySize() {
         if (sizeA > sizeB) return 1;
         return 0;
     }).prependTo($container);
+    $container.children().last().detach().prependTo($container);
 }
 
 function doSortByTimeAndSize() {
@@ -173,14 +177,19 @@ function doSortByTimeAndSize() {
         if (sizeA > sizeB) return 1;
         return 0;
     }).prependTo($container);
+    $container.children().last().detach().prependTo($container);
 }
 
-function addVerticalProgressNumbers() {
-
+function removeVerticalProgressNumbers() {
     var existingNumbers = document.querySelectorAll('.progressNumber');
     for (let number of existingNumbers) {
         number.remove();
     }
+}
+
+function addVerticalProgressNumbers() {
+
+    removeVerticalProgressNumbers();
 
     var boxes = document.querySelectorAll('div.post_el_small');
     for (var i = 1 ; i < boxes.length ; i++) {
@@ -676,6 +685,12 @@ function resetGreen() {
 
 
 function draw() {
+    // remove old lines:
+    var drawnLines = document.querySelectorAll('.drawnLine');
+    for (let drawnLine of drawnLines) {
+        drawnLine.remove();
+    }
+
     map.forEach((sizes, duration) => {
         if (sizes.length == 1) {
             return;
@@ -767,7 +782,7 @@ function linedraw(x1, y1, x2, y2, lineClass, noGradient) {
             backgroundCSS = 'background: linear-gradient(90deg, rgba(255,255,0,1) 0%, rgba(255,0,0,1) 100%);';
         }
     }
-    destination.innerHTML += "<div class='"+lineClass+"' style='display: none; position: absolute; z-index:10; transform-origin: top left; transform: rotate(" + degree + "deg); width: " + lineLength + "px; height: 3px; " + backgroundCSS + " top: " + y1 + "px; left: " + x1 + "px;'></div>";
+    destination.innerHTML += "<div class='"+lineClass+" drawnLine' style='display: none; position: absolute; z-index:10; transform-origin: top left; transform: rotate(" + degree + "deg); width: " + lineLength + "px; height: 3px; " + backgroundCSS + " top: " + y1 + "px; left: " + x1 + "px;'></div>";
 
 }
 
