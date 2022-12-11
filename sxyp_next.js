@@ -2,17 +2,20 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.90
+// @version      1.92
 // @description  "You don't need to take all of the steps, only the next one."
-// @match        https://sxyp/
-// @match        https://sxyp/o/*
-// @match        https://sxyp/*.html*
-// @match        https://sxyp/
+// @match        https://sxyp*/
+// @match        https://sxyp*/o/*
+// @match        https://sxyp*/*.html*
+// @match        https://sxyp*.net/
+// @match        https://sxyp*.net/o/*
+// @match        https://sxyp*.net/*.html*
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
 // @connect      streamtape.com
 // @connect      doodstream.com
+// @connect      doodstream.com.
 // @connect      dood.wf
 // @connect      dood.re
 // @connect      upvideo.to
@@ -38,6 +41,8 @@
 // v1.88 new hostings
 // v1.89 progress numbers updated for multiple pages
 // v1.90 handled rapidgator error
+// v1.91 fixed problem with multiple sizes loaded at once
+// v1.92 sorting by time+size or by size, loading pages on *asm/ pages
 // TODO clickable icons
 
 
@@ -65,8 +70,110 @@ var pageUrl = window.location.href;
 
     initLoadTimes();
     loadSizesOfExternalLinks();
+
+    addButtonToSortByTimeAndSize();
+    addButtonToSortBySize();
 })();
 
+
+function addButtonToSortByTimeAndSize() {
+    var newButton = document.createElement("a");
+    newButton.id="mySortButton1";
+    newButton.text=" sort by time and size ";
+    newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
+
+    newButton.addEventListener('click', function(event) {
+        doSortByTimeAndSize();
+        resetGreen();
+        resetRed();
+        addVerticalProgressNumbers();
+        if (downloadPending == 0) {
+            highlightBiggestMovieSizes();
+            setTimeout (draw, 500);
+        }
+    });
+
+    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    destination = tags[tags.length-1];
+    if (destination != undefined) {
+        insertAfter(destination, newButton);
+        return;
+    }
+    destination = document.getElementsByClassName('.blog_sort_div')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+}
+
+function addButtonToSortBySize() {
+    var newButton = document.createElement("a");
+    newButton.id="mySortButton2";
+    newButton.text=" sort by size ";
+    newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
+
+    newButton.addEventListener('click', function(event) {
+        doSortBySize();
+        resetGreen();
+        resetRed();
+        addVerticalProgressNumbers();
+        if (downloadPending == 0) {
+            highlightBiggestMovieSizes();
+            setTimeout (draw, 500);
+        }
+    });
+
+    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    destination = tags[tags.length-1];
+    if (destination != undefined) {
+        insertAfter(destination, newButton);
+        return;
+    }
+    destination = document.getElementsByClassName('.blog_sort_div')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+}
+function doSortBySize() {
+    var $container = $('div.post_el_small').first().parent();
+    var $boxes = $('div.post_el_small');
+    $boxes.sort(function (b, a) {
+        var sizeA = parseInt( $(a).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        var sizeB = parseInt( $(b).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        if (sizeA < sizeB) return -1;
+        if (sizeA > sizeB) return 1;
+        return 0;
+    }).prependTo($container);
+}
+
+function doSortByTimeAndSize() {
+    var $container = $('div.post_el_small').first().parent();
+    var $boxes = $('div.post_el_small');
+    $boxes.sort(function (b, a) {
+        var contentA = parseInt( $(a).find('.duration_small').text().replaceAll(':','') );
+        var contentB = parseInt( $(b).find('.duration_small').text().replaceAll(':','') );
+        console.log(contentA + ' ' + contentB);
+        if (contentA < contentB) return -1;
+        if (contentA > contentB) return 1;
+        // equal time, compare sizes
+        var sizeA = parseInt( $(a).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        var sizeB = parseInt( $(b).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        if (sizeA < sizeB) return -1;
+        if (sizeA > sizeB) return 1;
+        return 0;
+    }).prependTo($container);
+}
 
 function addVerticalProgressNumbers() {
 
@@ -214,6 +321,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "streamcrypt.net")) {
         newEl = createIconImg("https://streamcrypt.net/logo.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "streamhub.to")) {
+        newEl = createIconImg("https://streamhub.to/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
@@ -405,18 +515,23 @@ function sgRefreshButtonNumber() {
 function loadNextPage() {
     blockButton();
 
+    var nextPageUrl;
     var indexOfPageParameter = pageUrl.indexOf('page=');
-    if (indexOfPageParameter > 0) {
-        pageUrl = pageUrl.substring(0,indexOfPageParameter);
+    if (pageUrl.endsWith('asm/')) {
+        nextPageUrl = pageUrl.substring(0, pageUrl.lastIndexOf('/')+1) + nextPageNumber;
     } else {
-        var indexOfQuestionMark = pageUrl.indexOf('?');
-        if (indexOfQuestionMark > 0) {
-            pageUrl = pageUrl + '&';
+        if (indexOfPageParameter > 0) {
+            pageUrl = pageUrl.substring(0,indexOfPageParameter);
         } else {
-            pageUrl = pageUrl + '?';
+            var indexOfQuestionMark = pageUrl.indexOf('?');
+            if (indexOfQuestionMark > 0) {
+                pageUrl = pageUrl + '&';
+            } else {
+                pageUrl = pageUrl + '?';
+            }
         }
+        nextPageUrl = pageUrl + 'page=' + nextPageNumber
     }
-    var nextPageUrl = pageUrl + 'page=' + nextPageNumber
 
     $.ajax ( {
         type:       'GET',
@@ -713,21 +828,22 @@ function addSizesWhenBrowsing() {
     }
     var selStartTime, selEndTime;
     //selStartTime = performance.now();
-    boxes.forEach(el => {
-        if (el.querySelector('.movieSize') == undefined) {
-            addButtonToGetMovieSize(el);
+    boxes.forEach(box => {
+        if (!box.classList.contains('alreadyProcessed')) {
+            box.classList.add('alreadyProcessed');
+            addButtonToGetMovieSize(box);
         }
     });
     //selEndTime = performance.now();
 }
 
 
-function addButtonToGetMovieSize(el) {
-    var referenceNode = el.getElementsByClassName('post_time')[0];
+function addButtonToGetMovieSize(box) {
+    var referenceNode = box.getElementsByClassName('post_time')[0];
     if (referenceNode == undefined) {
         return;
     }
-    var getMovieSizeButtonAlreadyExists = el.getElementsByClassName('get_movie_size');
+    var getMovieSizeButtonAlreadyExists = box.getElementsByClassName('get_movie_size');
     if (getMovieSizeButtonAlreadyExists.length > 0) {
         //skip adding another button when "load next" is clicked too fast
         return;
@@ -736,14 +852,14 @@ function addButtonToGetMovieSize(el) {
     newButton.setAttribute("style", "margin-left:10px; opacity:0.1;border: none; padding: 1px 3px; ");
     newButton.setAttribute("class", "get_movie_size");
     newButton.innerText="get";
-    newButton.addEventListener("mouseover", function() { go(el) });
-    newButton.addEventListener("click", function() { go(el) });
+    newButton.addEventListener("mouseover", function() { go(box) });
+    newButton.addEventListener("click", function() { go(box) });
     insertAfter(referenceNode, newButton);
 }
 
-function go(el) {
-    var moviePageUrl = el.querySelector('a.js-pop').href;
-    downloadGetMovieSizeAndAddNewElement(moviePageUrl, el);
+function go(box) {
+    var moviePageUrl = box.querySelector('a.js-pop').href;
+    downloadGetMovieSizeAndAddNewElement(moviePageUrl,box);
 }
 
 function setMovieSize(movieSize, el) {
