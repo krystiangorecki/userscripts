@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         esc, load next page + filter + sort
 // @namespace    https://github.com/krystiangorecki/userscripts/
-// @version      0.23
+// @version      0.25
 // @description  try to take over the world!
 // @author       You
-// @match        https://esc*/anonse/*
-// @connect      esc*
+// @match        https://pl.esc*/anonse/*
+// @connect      pl.esc
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM.xmlHttpRequest
 // @grant        GM_addStyle
@@ -201,7 +201,7 @@ function loadNextPage() {
             nextPageURL = $page.find('a.next').first().attr('href');
             if (nextPageURL != undefined) {
                 nextPageURL = window.location.hostname + window.location.pathname + nextPageURL;
-                if (nextPageURL.indexOf('.pl')==6) {
+                if (!nextPageURL.startsWith('http')) {
                     nextPageURL = 'https://' + nextPageURL;
                 }
                 refreshButtonNumber(getNextPageNumber(nextPageURL));
