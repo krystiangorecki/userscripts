@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.93
+// @version      1.95
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp*/
 // @match        https://sxyp*/o/*
@@ -44,6 +44,9 @@
 // v1.91 fixed problem with multiple sizes loaded at once
 // v1.92 sorting by time+size or by size, loading pages on *asm/ pages
 // v1.93 sorting fix to keep sorting bar at the top, removing old lines before drawing the new ones
+// v1.94 sorting including external sizes
+// v1.95 button to load all exteral sizes
+// v1.95 fixed class selector
 // TODO clickable icons
 
 
@@ -71,11 +74,49 @@ var pageUrl = window.location.href;
 
     initLoadTimes();
     loadSizesOfExternalLinks();
+    addLoadExternalButton();
 
+    addButtonToSortByTimeAndSizeIncludingExternals();
     addButtonToSortByTimeAndSize();
     addButtonToSortBySize();
 })();
 
+
+function addButtonToSortByTimeAndSizeIncludingExternals() {
+    var newButton = document.createElement("a");
+    newButton.id="mySortButton1";
+    newButton.text=" sort ext ";
+    newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
+
+    newButton.addEventListener('click', function(event) {
+        removeVerticalProgressNumbers();
+        doSortExternal();
+        resetGreen();
+        resetRed();
+        addVerticalProgressNumbers();
+        if (downloadPending == 0) {
+            highlightBiggestMovieSizes();
+            setTimeout (draw, 500);
+        }
+    });
+
+    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    destination = tags[tags.length-1];
+    if (destination != undefined) {
+        insertAfter(destination, newButton);
+        return;
+    }
+    destination = document.getElementsByClassName('blog_sort_div')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+}
 
 function addButtonToSortByTimeAndSize() {
     var newButton = document.createElement("a");
@@ -106,7 +147,7 @@ function addButtonToSortByTimeAndSize() {
         insertAfter(destination, newButton);
         return;
     }
-    destination = document.getElementsByClassName('.blog_sort_div')[0];
+    destination = document.getElementsByClassName('blog_sort_div')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
@@ -120,7 +161,6 @@ function addButtonToSortBySize() {
     newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
 
     newButton.addEventListener('click', function(event) {
-        removeVerticalProgressNumbers();
         doSortBySize();
         resetGreen();
         resetRed();
@@ -142,12 +182,32 @@ function addButtonToSortBySize() {
         insertAfter(destination, newButton);
         return;
     }
-    destination = document.getElementsByClassName('.blog_sort_div')[0];
+    destination = document.getElementsByClassName('blog_sort_div')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
     }
 }
+
+function doSortExternal() {
+    var $container = $('div.post_el_small').first().parent();
+    var $boxes = $('div.post_el_small');
+    $boxes.sort(function (b, a) {
+        var sizeElementsA = $(a).find('.movieSize,.extSize');
+        sizeElementsA = sizeElementsA.map(function() { return parseInt(this.innerText.replace(' M','000').replace(' G','000000').replaceAll(/[A-Z .]/g,'')) }).filter(function() { return this>0 });
+        var maxSizeA = Math.max(...sizeElementsA);
+
+        var sizeElementsB = $(b).find('.movieSize,.extSize');
+        sizeElementsB = sizeElementsB.map(function() { return parseInt(this.innerText.replace(' M','000').replace(' G','000000').replaceAll(/[A-Z .]/g,'')) }).filter(function() { return this>0 });
+        var maxSizeB = Math.max(...sizeElementsB);
+        console.log(maxSizeA + ' ' + maxSizeB);
+        if (maxSizeA < maxSizeB) return -1;
+        if (maxSizeA > maxSizeB) return 1;
+        return 0;
+    }).prependTo($container);
+    $container.children().last().detach().prependTo($container);
+}
+
 function doSortBySize() {
     var $container = $('div.post_el_small').first().parent();
     var $boxes = $('div.post_el_small');
@@ -213,6 +273,10 @@ function loadSizesOfExternalLinks() {
     if (isSingleMoviePage || isBlogPage) {
         // single movie page or blog page, loading all at once
         postBoxes.forEach(postBox => {
+            if (postBox.classList.contains('externalIconsAdded')) {
+                return;
+            }
+            postBox.classList.add('externalIconsAdded');
             var allExternalLinks = postBox.querySelectorAll('.post_el_wrap div.post_text a.extlink');
             if (allExternalLinks.length > 0) {
                 let movieId = getMovieId(postBox);
@@ -229,6 +293,10 @@ function loadSizesOfExternalLinks() {
         // page with boxes, adding only listeners
         var allBoxes = document.querySelectorAll('div.post_text');
         allBoxes.forEach(box => {
+            if (box.classList.contains('externalIconsAdded')) {
+                return;
+            }
+            box.classList.add('externalIconsAdded');
             var externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
                 externalLinksForThisBox.forEach((link, index) => {
@@ -252,6 +320,7 @@ function addSizeToIcon(box, href, size, index) {
 
     var iconElement = document.querySelector(iconId);
     var sizeElement = document.createElement("span");
+    sizeElement.classList.add('extSize');
 
     size = size.replace('B','');
     if (contains(size, '.')) {
@@ -571,7 +640,6 @@ function loadNextPage() {
                     // console.log(' ' + newMovieId + ' exists? ' + exists + " as " + i);
                 }
             });
-
             for (var i = indexesToRemove.length - 1 ; i>=0 ; i--) {
                 $newElements.splice(i, 1);
             }
@@ -581,6 +649,7 @@ function loadNextPage() {
             resetRed();
             //reinitialize file sizes check
             initLoadTimes();
+            loadSizesOfExternalLinks();
             addVerticalProgressNumbers();
             if (nextPageNumber > maxPage) {
                 $('#nextPageButton').val("---");
@@ -656,13 +725,44 @@ function addHideRedButton() {
         insertAfter(destination, newButton);
         return;
     }
-    destination = document.getElementsByClassName('.blog_sort_div')[0];
+    destination = document.getElementsByClassName('blog_sort_div')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
     }
 }
 
+function addLoadExternalButton() {
+    var newButton = document.createElement("button");
+    newButton.setAttribute("style", "margin-left:10px; opacity:0.3;border: none; padding: 1px 3px; ");
+    newButton.id="load_external_sizes";
+    newButton.innerText="load external sizes";
+    newButton.addEventListener("click", function() {
+        var allBoxes = document.querySelectorAll('div.post_text');
+        allBoxes.forEach(box => {
+            var externalLinksForThisBox = box.querySelectorAll('a.extlink');
+            if (externalLinksForThisBox.length > 0) {
+                loadSizesForAllExternalLinks(box, externalLinksForThisBox);
+            }
+        });
+    });
+    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    destination = tags[tags.length-1];
+    if (destination != undefined) {
+        insertAfter(destination, newButton);
+        return;
+    }
+    destination = document.getElementsByClassName('blog_sort_div')[0];
+    if (destination != undefined) {
+        insertAsLastChild(destination, newButton);
+        return;
+    }
+}
 function loadWhiteSizes() {
     var whiteButtons = document.querySelectorAll('.get_movie_size:not(.red)');
     whiteButtons.forEach(b => b.click());
@@ -969,7 +1069,10 @@ function getIndexOfMaxNumber(sizes) {
 }
 
 function removeButton(el) {
-    el.getElementsByClassName('get_movie_size')[0].remove();
+    var button = el.getElementsByClassName('get_movie_size');
+    if (button[0]!=undefined) {
+        button[0].remove();
+    }
 }
 
 function createTextElement(text) {
