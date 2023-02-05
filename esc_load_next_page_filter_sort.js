@@ -85,7 +85,17 @@ function sortByPrice(){
     var $elements = $container.children();
 
     $elements.sort(function(a, b) {
-        return $(a).find('.-title>.-content').text().toLowerCase().localeCompare($(b).find('.-title>.-content').text().toLowerCase());
+        var price1 = $(a).find('.-title>.-content').text().toLowerCase();
+        price1 = price1.replace(/ zł.*/,'');
+        if (price1.startsWith('-')) {
+            price1='9999';
+        }
+        var price2 = $(b).find('.-title>.-content').text().toLowerCase();
+        price2 = price2.replace(/ zł.*/,'');
+        if (price2.startsWith('-')) {
+            price2='9999';
+        }
+        return parseInt(price1) - parseInt(price2);
     });
 
     $container.empty();
