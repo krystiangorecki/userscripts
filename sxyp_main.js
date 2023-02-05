@@ -2,7 +2,7 @@
 // @name         sxyp
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.6
+// @version      1.7
 // @description  "Do the difficult things while they are easy and do the great things while they are small."
 // @match        https://yp
 // @match        https://yp/o/*
@@ -20,36 +20,42 @@
 //v1.3 remove " and " from search query
 //v1.4 remove some unused code
 //v1.5 added hexupload
+//v1.5 added external icons + small fixes
 //v1.6 added external favicons + removed unncessary elements + small fixes
+//v1.7 moved progress numbers to another script
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
 GM_addStyle(' .sharing_toolbox {    margin-top: 5px;    text-align: right;    position: absolute;  z-index:100;   right: 40px; } ');
+// remove plus icon by the names to submit another name (available only for logged in users)
+GM_addStyle(' .sub_add_nl {    display:none; } ');
+GM_addStyle(' span.sub_add {    display:none; } ');
+GM_addStyle(' .pes_author_div {   user-select: none; } ');
+
+
 
 (function() {
     'use strict';
-
     redirectIfSearchQueryContainsAnd();
     removeUnnecessaryElements();
     copyMovieSizeToTheTop();
     markLesAndSolo();
     markExternalLinks();
     addLinksToPlaylist();
-    player();
+    //  player();
     addComboButton();
     addCopyLinkButton();
     addCopyButton();
     addDownloadButton();
     removeLayerOverThePlayer();
     redirectToDVMirrorSite();
-    addVerticalProgressNumbers();
     showLinkForEachSceneInCaseOfComboContainer();
-
+    /*
     $("[onclick]").removeAttr("onclick");
     $("*").unbind("click");
     $("[onclick]").removeAttr("onclick");
     $("*").unbind("click");
-
+*/
     removeAllIframes();
 })();
 
@@ -59,11 +65,30 @@ function removeUnnecessaryElements() {
     for (let i = 0; i < clockIcons.length; ++i) {
         clockIcons[i].remove();
     }
-    // remove plus icon by the names to submit another name (available only for logged in users)
-    var plusIcons = document.querySelectorAll(".sub_add_nl");
-    for (let i = 0; i < plusIcons.length; ++i) {
-        plusIcons[i].remove();
+    // remove donate $$$ icon
+    var donateIcons = document.querySelectorAll(".donate");
+    for (let i = 0; i < donateIcons.length; ++i) {
+        donateIcons[i].remove();
     }
+    // remove uploader name initial icon
+    var initialIcons = document.querySelectorAll(".a_char");
+    for (let i = 0; i < initialIcons.length; ++i) {
+        initialIcons[i].remove();
+    }
+    // pluses by the names
+    setTimeout(function() {
+        var pluses = document.querySelectorAll("span.sub_add");
+        for (let i = 0; i < pluses.length; ++i) {
+            pluses[i].remove();
+        }
+    }, 200);
+    // pluses by the names
+    setTimeout(function() {
+        var pluses = document.querySelectorAll(".sub_add_nl");
+        for (let i = 0; i < pluses.length; ++i) {
+            pluses[i].remove();
+        }
+    }, 200);
 }
 
 function redirectIfSearchQueryContainsAnd() {
@@ -81,17 +106,6 @@ function showLinkForEachSceneInCaseOfComboContainer() {
             var sceneId = scenes[i].dataset.postid;
             var href = "/post/" + sceneId + ".html";
             addButtonAfter("DIRECT LINK", href, "", "", scenes[i]);
-        }
-    }
-}
-
-function addVerticalProgressNumbers() {
-    var boxes = document.querySelectorAll('div.post_el_small');
-    for (var i = 1 ; i < boxes.length ; i++) {
-        if ((i+1)%3 == 0) {
-            var newEl = document.createElement("span");
-            newEl.innerText = '' + (i+1);
-            insertAfter(boxes[i], newEl);
         }
     }
 }
@@ -437,7 +451,6 @@ function markLesAndSolo() {
 
 function markExternalLinks() {
     var boxes = document.querySelectorAll("div.post_text");
-    var imgTemplate = '<img src="https://www1.ddownload.com/images/favicon.ico" style="height: 16px">';
     for (var i = 0; i < boxes.length; ++i) {
         var text = boxes[i].textContent;
         var newStyle = "";
@@ -453,38 +466,7 @@ function markExternalLinks() {
             newStyle ="border:2px solid #bb4500";
         }
         boxes[i].parentNode.style = newStyle;
-
-        // mark with favicon
-        var uploaderName = boxes[i].parentElement.querySelector('.a_name');
-        var newEl;
-        if (contains(text, "sbembed")) {
-            newEl = createIconImg("https://sbembed.com/favicon.ico");
-            insertAfter(uploaderName.parentElement, newEl);
-        }
-        if (contains(text, "ddownload")) {
-            newEl = createIconImg("http://ddownload.com/favicon.ico");
-            insertAfter(uploaderName.parentElement, newEl);
-        }
-        if (contains(text, " dood")) {
-            newEl = createIconImg("http://www.google.com/s2/favicons?domain=dood.re");
-            insertAfter(uploaderName.parentElement, newEl);
-        }
-        if (contains(text, "rapidgator")) {
-            newEl = createIconImg("http://www.google.com/s2/favicons?domain=rapidgator.net");
-            insertAfter(uploaderName.parentElement, newEl);
-        }
-        if (contains(text, "hexupload")) {
-            newEl = createIconImg("http://www.google.com/s2/favicons?domain=hexupload.net");
-            insertAfter(uploaderName.parentElement, newEl);
-        }
     }
-}
-
-function createIconImg(src) {
-    var newImg = document.createElement("img");
-    newImg.src=src;
-    newImg.style = 'height: 16px; margin-left:5px';
-    return newImg;
 }
 
 function insertAfter(referenceNode, newNode) {
