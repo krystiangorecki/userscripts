@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.95
+// @version      1.97
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp*/
 // @match        https://sxyp*/o/*
@@ -18,6 +18,7 @@
 // @connect      doodstream.com.
 // @connect      dood.wf
 // @connect      dood.re
+// @connect      dood.yt
 // @connect      upvideo.to
 // @connect      highload.to
 // @connect      rapidgator.net
@@ -47,6 +48,8 @@
 // v1.94 sorting including external sizes
 // v1.95 button to load all exteral sizes
 // v1.95 fixed class selector
+// v1.96 updating streamhub.to links with original http size
+// v1.97 added k2s icon
 // TODO clickable icons
 
 
@@ -287,6 +290,7 @@ function loadSizesOfExternalLinks() {
                     addIconWithoutSize(movieId, href, index, destinationElement);
                 });
             }
+            updateStreamhubToHrefForSingleMoviePage(postBox);
             loadSizesForAllExternalLinks(postBox, allExternalLinks);
         });
     } else {
@@ -371,7 +375,7 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
         newEl = createIconImg(iconLink, iconId);
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "dood")) {
-        newEl = createIconImg("http://doodstream.com/favicon.ico", iconId);
+        newEl = createIconImg("http://www.google.com/s2/favicons?domain=doodstream.com", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "rapidgator")) {
         newEl = createIconImg("http://www.google.com/s2/favicons?domain=rapidgator.net", iconId);
@@ -402,6 +406,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "streamhub.to")) {
         newEl = createIconImg("https://streamhub.to/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "k2s.cc")) {
+        newEl = createIconImg("https://k2s.cc/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
@@ -693,7 +700,7 @@ function initLoadTimes() {
         addHideRedButton();
         // setTimeout(clickHideRedButton, 1000);
         if (autoloadWhiteSizes) {
-            setTimeout(loadWhiteSizes, 2500);
+            setTimeout(loadWhiteSizes, 200);
         }
     }
 }
@@ -974,7 +981,7 @@ function addButtonToGetMovieSize(box) {
 
 function go(box) {
     var moviePageUrl = box.querySelector('a.js-pop').href;
-    downloadGetMovieSizeAndAddNewElement(moviePageUrl,box);
+    downloadGetMovieSizeAndAddNewElement(moviePageUrl, box);
 }
 
 function setMovieSize(movieSize, el) {
@@ -1002,6 +1009,8 @@ function downloadGetMovieSizeAndAddNewElement(moviePageUrl, el) {
             } else {
                 setMovieSize(match[1], el);
                 addResultToMap(el, match[1]);
+                // only for box view
+                updateStreamhubToHrefForBoxView(el, match[1]);
             }
             downloadPending--;
             if (downloadPending == 0) {
@@ -1012,6 +1021,51 @@ function downloadGetMovieSizeAndAddNewElement(moviePageUrl, el) {
         }
     } );
 }
+
+/**
+  For box view:
+  If this box contains streamhub.to link its href will be suffixed with original http movie size
+*/
+function updateStreamhubToHrefForBoxView(box, movieSize) {
+    debugger;
+    var externalLinksForThisBox = box.querySelectorAll('a.extlink');
+    if (externalLinksForThisBox.length > 0) {
+        externalLinksForThisBox.forEach((link, index) => {
+            if (contains(link.href, 'streamhub.to')) {
+                // just including filesize in the link
+                var normalSize = box.querySelector('.movieSize').innerText.replace(' ','');
+                link.href = link.href + '#' + normalSize;
+                return;
+            }
+        });
+    }
+}
+/**
+  For single movie page view:
+  If this box contains streamhub.to link its href will be suffixed with original http movie size
+*/
+function updateStreamhubToHrefForSingleMoviePage(box) {
+    debugger;
+    var externalLinksForThisBox = box.querySelectorAll('a.extlink');
+    if (externalLinksForThisBox.length > 0) {
+        externalLinksForThisBox.forEach((link, index) => {
+            if (contains(link.href, 'streamhub.to')) {
+                // just including filesize in the link
+                var normalSize = $('div.post_control').first().prev().text();
+                const regex = /size:(\d+)/i;
+                var match = regex.exec(normalSize);
+                if (match == undefined) {
+                    normalSize = '---';
+                } else {
+                    normalSize = match[1];
+                }
+                link.href = link.href + '#' + normalSize;
+                return;
+            }
+        });
+    }
+}
+
 
 function addResultToMap(el, size) {
     var duration = el.getElementsByClassName('duration_small')[0].innerText;
