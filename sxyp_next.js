@@ -2,7 +2,7 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.97
+// @version      1.99
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp*/
 // @match        https://sxyp*/o/*
@@ -22,6 +22,7 @@
 // @connect      upvideo.to
 // @connect      highload.to
 // @connect      rapidgator.net
+// @connect      filefactory.com
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -50,12 +51,16 @@
 // v1.95 fixed class selector
 // v1.96 updating streamhub.to links with original http size
 // v1.97 added k2s icon
+// v1.98 load next page button also at the bottom
+// v1.99 convert filefactory string to link
+
 // TODO clickable icons
 
 
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
 GM_addStyle(' .post_text.red { color: red; }');
+GM_addStyle(' .post_text.grey { color: #5C5053; }');
 GM_addStyle(' .a_name {  letter-spacing: -1px;  }');
 GM_addStyle(' .pes_author_div { color: #6ddede; font-size: 10px; letter-spacing: -1px; }');
 GM_addStyle(' .pes_author_div .a_name {font-size:9px; margin-left:0px}');
@@ -280,7 +285,9 @@ function loadSizesOfExternalLinks() {
                 return;
             }
             postBox.classList.add('externalIconsAdded');
-            var allExternalLinks = postBox.querySelectorAll('.post_el_wrap div.post_text a.extlink');
+            var postText = postBox.querySelector('.post_el_wrap div.post_text');
+            convertFilefactoryTextToLink(postText);
+            var allExternalLinks = postText.querySelectorAll('a.extlink');
             if (allExternalLinks.length > 0) {
                 let movieId = getMovieId(postBox);
                 let uploaderName = postBox.querySelector('.a_name');
@@ -301,6 +308,7 @@ function loadSizesOfExternalLinks() {
                 return;
             }
             box.classList.add('externalIconsAdded');
+            convertFilefactoryTextToLink(box);
             var externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
                 externalLinksForThisBox.forEach((link, index) => {
@@ -314,6 +322,14 @@ function loadSizesOfExternalLinks() {
                 box.parentElement.addEventListener('mouseover', (event) => {loadSizesForAllExternalLinks(box, externalLinksForThisBox)});
             }
         });
+    }
+}
+
+/** Czasami linki do filefactory.com nie są linkami a zwyklym tekstem. Podmieniam je na link jeszcze przed dodaniem ikon i rozmiarów. */
+function convertFilefactoryTextToLink(postText){
+    if (contains(postText.innerText, 'https://www.filefactory.com')) {
+        var url = getStringByRegex(postText.innerText, /(https:\/\/www\.filefactory\.com\/file\/[a-z0-9]+)/);
+        postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">filefactory.com</a>');
     }
 }
 
@@ -410,6 +426,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "k2s.cc")) {
         newEl = createIconImg("https://k2s.cc/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "filefactory.com")) {
+        newEl = createIconImg("https://www.filefactory.com/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
         insertAsLastChild(destinationElement, newEl);
@@ -435,7 +454,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         var href = link.href;
         var selector;
         if (contains(href, 'ddownload.com')) {
-            selector = 'span.file-size';
+            selector = 'span.file-size, h2>font:last-child';
         } else if (contains(href, 'hexupload.net')) {
             selector = ['span.h3.text-danger','.download-page'];
         } else if (contains(href, 'rapidgator.net')) {
@@ -467,6 +486,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
+        } else if (contains(href, 'filefactory.com')) {
+            debugger;
+            selector = '#file_info';
+            httpGETWithCORSbypass(href, selector, link, box, index);
         }
 
         if (selector == undefined) {
@@ -536,6 +559,9 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 if (size.length == 0 || contains(size, 'Earn money') || contains(size, 'File Not Found') || contains(size, 'deleted')) {
                     size = "-";
                 }
+                if (contains(url, 'filefactory.com')) {
+                    size = size.replace(/ uploaded.*/, '');
+                }
             } else {
                 size = "-";
             }
@@ -563,7 +589,8 @@ function htmlToElement(html) {
 function initLoadNextPage() {
     maxPage = getMaxPage();
     if (maxPage != undefined) {
-        addLoadNextPageButton();
+        addLoadNextPageButtonAtTheTop();
+        addLoadNextPageButtonAtTheBottom();
     }
 }
 
@@ -579,22 +606,38 @@ function getMaxPage() {
     }
 }
 
-function addLoadNextPageButton() {
+function addLoadNextPageButtonAtTheTop() {
     var loadNextPageButton = document.createElement("input");
     loadNextPageButton.setAttribute("type", "button");
-    loadNextPageButton.setAttribute("id", "nextPageButton");
+    loadNextPageButton.setAttribute("class", "nextPageButton");
     loadNextPageButton.setAttribute("style", "width:10%; position:absolute;right:0px");
     loadNextPageButton.onclick = loadNextPage;
 
     var destination = document.getElementsByClassName('main_content')[0];
     if (destination != undefined) {
         insertAsFirstChild(destination, loadNextPageButton);
-        sgRefreshButtonNumber();
+        updateButtonNumber();
     }
 }
 
-function sgRefreshButtonNumber() {
-    $('#nextPageButton').val("load " + nextPageNumber);
+function addLoadNextPageButtonAtTheBottom() {
+    var loadNextPageButton = document.createElement("input");
+    loadNextPageButton.setAttribute("type", "button");
+    loadNextPageButton.setAttribute("class", "nextPageButton");
+    loadNextPageButton.setAttribute("style", "width:50%; background-color:#262932; color: #FFC3FA");
+    loadNextPageButton.onclick = loadNextPage;
+
+    var destination = document.querySelector('#center_control');
+    if (destination != undefined) {
+        insertBefore(destination, loadNextPageButton);
+        updateButtonNumber();
+    }
+}
+
+function updateButtonNumber() {
+    $('.nextPageButton').each(function() {
+        $(this).val("load " + nextPageNumber);
+    });
 }
 
 function loadNextPage() {
@@ -659,7 +702,10 @@ function loadNextPage() {
             loadSizesOfExternalLinks();
             addVerticalProgressNumbers();
             if (nextPageNumber > maxPage) {
-                $('#nextPageButton').val("---");
+                $('.nextPageButton').each(
+                    function() {
+                        $( this ).val("---");
+                    });
             } else {
                 unblockButton();
             }
@@ -668,15 +714,19 @@ function loadNextPage() {
 }
 
 function blockButton() {
-    var button = $('#nextPageButton').first();
-    button.css('text-decoration','line-through');
-    button.attr('disabled','');
+    $('.nextPageButton').each(
+        function() {
+            $( this ).css('text-decoration','line-through');
+            $( this ).attr('disabled','');
+        });
 }
 
 function unblockButton() {
-    var button = $('#nextPageButton').first();
-    button.css('text-decoration','');
-    button.removeAttr('disabled');
+    $('.nextPageButton').each(
+        function() {
+            $( this ).css('text-decoration','');
+            $( this ).removeAttr('disabled');
+        });
 }
 
 
@@ -1027,11 +1077,10 @@ function downloadGetMovieSizeAndAddNewElement(moviePageUrl, el) {
   If this box contains streamhub.to link its href will be suffixed with original http movie size
 */
 function updateStreamhubToHrefForBoxView(box, movieSize) {
-    debugger;
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com')) {
                 // just including filesize in the link
                 var normalSize = box.querySelector('.movieSize').innerText.replace(' ','');
                 link.href = link.href + '#' + normalSize;
@@ -1045,11 +1094,10 @@ function updateStreamhubToHrefForBoxView(box, movieSize) {
   If this box contains streamhub.to link its href will be suffixed with original http movie size
 */
 function updateStreamhubToHrefForSingleMoviePage(box) {
-    debugger;
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net')) {
                 // just including filesize in the link
                 var normalSize = $('div.post_control').first().prev().text();
                 const regex = /size:(\d+)/i;
@@ -1084,6 +1132,14 @@ function addResultToMap(el, size) {
 
 function highlightBiggestMovieSizes() {
     map.forEach((sizes, duration) => {
+
+        if (duration == "EXTERNAL LINK") {
+            var els = mapEl.get(duration);
+            for (var i = 0 ; i < sizes.length ; i++) {
+                els[i].querySelector('.movieSize').classList.add('grey');
+            }
+            return;
+        }
         if (sizes.length == 1) {
             return;
         }
