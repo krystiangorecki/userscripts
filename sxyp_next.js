@@ -2,7 +2,6 @@
 // @name         sxyp load sizes and load next page
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.99
 // @description  "You don't need to take all of the steps, only the next one."
 // @match        https://sxyp*/
 // @match        https://sxyp*/o/*
@@ -10,6 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
+// @version      1.99
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -23,6 +23,8 @@
 // @connect      highload.to
 // @connect      rapidgator.net
 // @connect      filefactory.com
+// @connect      upfilesurls.com
+// @connect      upfiles.com
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -53,6 +55,7 @@
 // v1.97 added k2s icon
 // v1.98 load next page button also at the bottom
 // v1.99 convert filefactory string to link
+// v2.00 convert upfiles string to link + upfiles icon + size loading
 
 // TODO clickable icons
 
@@ -287,6 +290,7 @@ function loadSizesOfExternalLinks() {
             postBox.classList.add('externalIconsAdded');
             var postText = postBox.querySelector('.post_el_wrap div.post_text');
             convertFilefactoryTextToLink(postText);
+            convertUpfilesTextToLink(postText);
             var allExternalLinks = postText.querySelectorAll('a.extlink');
             if (allExternalLinks.length > 0) {
                 let movieId = getMovieId(postBox);
@@ -309,6 +313,7 @@ function loadSizesOfExternalLinks() {
             }
             box.classList.add('externalIconsAdded');
             convertFilefactoryTextToLink(box);
+            convertUpfilesTextToLink(box);
             var externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
                 externalLinksForThisBox.forEach((link, index) => {
@@ -330,6 +335,12 @@ function convertFilefactoryTextToLink(postText){
     if (contains(postText.innerText, 'https://www.filefactory.com')) {
         var url = getStringByRegex(postText.innerText, /(https:\/\/www\.filefactory\.com\/file\/[a-z0-9]+)/);
         postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">filefactory.com</a>');
+    }
+}
+function convertUpfilesTextToLink(postText){
+    if (contains(postText.innerText, ' upfiles.com')) {
+        var url = getStringByRegex(postText.innerText, /(upfiles\.com\/f\/[a-zA-Z0-9]+)/);
+        postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">upfiles.com</a>');
     }
 }
 
@@ -429,6 +440,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "filefactory.com")) {
         newEl = createIconImg("https://www.filefactory.com/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "upfiles.com")) {
+        newEl = createIconImg("https://upfilesurls.com/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
         insertAsLastChild(destinationElement, newEl);
@@ -487,8 +501,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'filefactory.com')) {
-            debugger;
             selector = '#file_info';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+        } else if (contains(href, 'upfiles.com')) {
+            selector = 'h3';
             httpGETWithCORSbypass(href, selector, link, box, index);
         }
 
@@ -555,6 +571,9 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
             if (size != null) {
                 size = size.innerText;
                 size = size.trim();
+                if (contains(url, 'upfiles.com')) {
+                    size = size.replace(/.*\(/, '(');
+                }
                 size = size.replace('(','').replace(')','');
                 if (size.length == 0 || contains(size, 'Earn money') || contains(size, 'File Not Found') || contains(size, 'deleted')) {
                     size = "-";
