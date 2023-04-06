@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      1.99
+// @version      2.01
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -25,6 +25,7 @@
 // @connect      filefactory.com
 // @connect      upfilesurls.com
 // @connect      upfiles.com
+// @connect      rapidcloud.cc
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -56,6 +57,7 @@
 // v1.98 load next page button also at the bottom
 // v1.99 convert filefactory string to link
 // v2.00 convert upfiles string to link + upfiles icon + size loading
+// v2.01 added rapidcloud.cc
 
 // TODO clickable icons
 
@@ -443,6 +445,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "upfiles.com")) {
         newEl = createIconImg("https://upfilesurls.com/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "rapidcloud.cc")) {
+        newEl = createIconImg(" https://rapidcloud.cc/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
         insertAsLastChild(destinationElement, newEl);
@@ -505,6 +510,9 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             httpGETWithCORSbypass(href, selector, link, box, index);
         } else if (contains(href, 'upfiles.com')) {
             selector = 'h3';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+        } else if (contains(href, 'rapidcloud.cc')) {
+            selector = '#container div.name > span:nth-child(3)';
             httpGETWithCORSbypass(href, selector, link, box, index);
         }
 
@@ -574,6 +582,7 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 if (contains(url, 'upfiles.com')) {
                     size = size.replace(/.*\(/, '(');
                 }
+                size = size.replace('Size', '');
                 size = size.replace('(','').replace(')','');
                 if (size.length == 0 || contains(size, 'Earn money') || contains(size, 'File Not Found') || contains(size, 'deleted')) {
                     size = "-";
