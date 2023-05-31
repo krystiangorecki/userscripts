@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.01
+// @version      2.03
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -19,6 +19,7 @@
 // @connect      dood.wf
 // @connect      dood.re
 // @connect      dood.yt
+// @connect      dooood.com
 // @connect      upvideo.to
 // @connect      highload.to
 // @connect      rapidgator.net
@@ -26,6 +27,8 @@
 // @connect      upfilesurls.com
 // @connect      upfiles.com
 // @connect      rapidcloud.cc
+// @connect      fikper.com
+// @connect      wolfstream.tv
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -57,7 +60,9 @@
 // v1.98 load next page button also at the bottom
 // v1.99 convert filefactory string to link
 // v2.00 convert upfiles string to link + upfiles icon + size loading
-// v2.01 added rapidcloud.cc
+// v2.01 added rapidcloud.cc, fikper only icon, streamvid only icon
+// v2.02 convert filefactory string to link
+// v2.03 updating wolfstream.tv links with original http size
 
 // TODO clickable icons
 
@@ -293,6 +298,7 @@ function loadSizesOfExternalLinks() {
             var postText = postBox.querySelector('.post_el_wrap div.post_text');
             convertFilefactoryTextToLink(postText);
             convertUpfilesTextToLink(postText);
+            convertFilelionsTextToLink(postText);
             var allExternalLinks = postText.querySelectorAll('a.extlink');
             if (allExternalLinks.length > 0) {
                 let movieId = getMovieId(postBox);
@@ -316,6 +322,7 @@ function loadSizesOfExternalLinks() {
             box.classList.add('externalIconsAdded');
             convertFilefactoryTextToLink(box);
             convertUpfilesTextToLink(box);
+            convertFilelionsTextToLink(box);
             var externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
                 externalLinksForThisBox.forEach((link, index) => {
@@ -343,6 +350,12 @@ function convertUpfilesTextToLink(postText){
     if (contains(postText.innerText, ' upfiles.com')) {
         var url = getStringByRegex(postText.innerText, /(upfiles\.com\/f\/[a-zA-Z0-9]+)/);
         postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">upfiles.com</a>');
+    }
+}
+function convertFilelionsTextToLink(postText){
+    if (contains(postText.innerText, 'filelions.to')) {
+        var url = getStringByRegex(postText.innerText, /(https:\/\/filelions\.to\/v\/[a-zA-Z0-9]+)/);
+        postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">filelions.to</a>');
     }
 }
 
@@ -446,7 +459,19 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
         newEl = createIconImg("https://upfilesurls.com/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "rapidcloud.cc")) {
-        newEl = createIconImg(" https://rapidcloud.cc/favicon.ico", iconId);
+        newEl = createIconImg("https://rapidcloud.cc/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "fikper.com")) {
+        newEl = createIconImg("https://fikper.com/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "streamvid.net")) {
+        newEl = createIconImg("https://streamvid.net/img/favicon-16x16.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "wolfstream.tv")) {
+        newEl = createIconImg("https://wolfstream.tv/xfst_images/wolfstream.tv3.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "filelions.to")) {
+        newEl = createIconImg("https://filelions.to/theme/images/favicon/favicon-16x16.png", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
@@ -508,12 +533,20 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         } else if (contains(href, 'filefactory.com')) {
             selector = '#file_info';
             httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         } else if (contains(href, 'upfiles.com')) {
             selector = 'h3';
             httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         } else if (contains(href, 'rapidcloud.cc')) {
             selector = '#container div.name > span:nth-child(3)';
             httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'fikper.com')) {
+            selector = 'div.MuiStack-root div.MuiStack-root div.MuiStack-root div.MuiStack-root div.MuiStack-root p.MuiTypography-root.MuiTypography-body1:nth-child(2)';
+            // needs javascript enabled
+            // httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         }
 
         if (selector == undefined) {
@@ -1108,7 +1141,7 @@ function updateStreamhubToHrefForBoxView(box, movieSize) {
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv')) {
                 // just including filesize in the link
                 var normalSize = box.querySelector('.movieSize').innerText.replace(' ','');
                 link.href = link.href + '#' + normalSize;
@@ -1125,7 +1158,7 @@ function updateStreamhubToHrefForSingleMoviePage(box) {
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv')) {
                 // just including filesize in the link
                 var normalSize = $('div.post_control').first().prev().text();
                 const regex = /size:(\d+)/i;
