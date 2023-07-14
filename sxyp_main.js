@@ -2,7 +2,6 @@
 // @name         sxyp
 // @namespace    https://github.com/krystiangorecki/userscripts/
 // @author       You
-// @version      1.7
 // @description  "Do the difficult things while they are easy and do the great things while they are small."
 // @match        https://yp
 // @match        https://yp/o/*
@@ -11,6 +10,7 @@
 // @match        https://sxyp/o/*
 // @match        https://sxyp/*.html*
 // @match        https://sxyp/
+// @version      1.71
 // @grant        GM_addStyle
 // @run-at       document-end
 // ==/UserScript==
@@ -21,8 +21,8 @@
 //v1.4 remove some unused code
 //v1.5 added hexupload
 //v1.5 added external icons + small fixes
-//v1.6 added external favicons + removed unncessary elements + small fixes
 //v1.7 moved progress numbers to another script
+//v1.71 minor url replacement fixes
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
@@ -93,8 +93,8 @@ function removeUnnecessaryElements() {
 
 function redirectIfSearchQueryContainsAnd() {
     var url = window.location.href;
-    if (url.indexOf('-and-')>10 || url.indexOf('-And-')>10 || url.indexOf('%20And%20')>10 || url.indexOf('-amp-')>10 ) {
-        var newurl = url.replace('-and-', '-').replace('-And-', '-').replace('%20And%20', '-').replace('-amp-', ' ');
+    if (url.includes('-and-') || url.includes('-And-') || url.includes('%20And%20') || url.includes('-amp-') || url.includes('%E2%80%93') || url.includes('--') ) {
+        var newurl = url.replace('-and-', '-').replace('-And-', '-').replace('%20And%20', '-').replace('-amp-', ' ').replace('%E2%80%93', '-').replace('--', '-');
         window.location = newurl;
     }
 }
