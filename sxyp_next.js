@@ -9,17 +9,30 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.03
+// @version      2.06
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
 // @connect      streamtape.com
+// @connect      dood.re
+// @connect      dood.so
+// @connect      dood.com
 // @connect      doodstream.com
 // @connect      doodstream.com.
-// @connect      dood.wf
-// @connect      dood.re
-// @connect      dood.yt
+// @connect      dood.to
+// @connect      doodapi.com
 // @connect      dooood.com
+// @connect      dood.watch
+// @connect      dood.cx
+// @connect      doodstream.co
+// @connect      dood.la
+// @connect      dood.ws
+// @connect      dood.pm
+// @connect      dood.sh
+// @connect      dood.one
+// @connect      dood.tech
+// @connect      dood.wf
+// @connect      dood.yt
 // @connect      upvideo.to
 // @connect      highload.to
 // @connect      rapidgator.net
@@ -62,7 +75,10 @@
 // v2.00 convert upfiles string to link + upfiles icon + size loading
 // v2.01 added rapidcloud.cc, fikper only icon, streamvid only icon
 // v2.02 convert filefactory string to link
-// v2.03 updating wolfstream.tv links with original http size
+// v2.03 updating wolfstream.tv and filelions.to links with original http size
+// v2.04 fixed /e/ -> /d/ for dood and its alternatives
+// v2.05 fixed alternative movie link
+// v2.06 tricky fikper size loading by posting json
 
 // TODO clickable icons
 
@@ -397,7 +413,11 @@ function getMovieId(box) {
             return movieIdFromData;
         }
     }
-    var movieHref = box.parentElement.querySelector('a.js-pop').href;
+    var movieLink = box.parentElement.querySelector('a.js-pop');
+    if (movieLink == undefined) {
+        movieLink = box.parentElement.querySelector('.post_control>a');
+    }
+    var movieHref = movieLink.href;
     var movieId = getStringByRegex(movieHref,/\/([0-9a-f]+)\.html/);
     return movieId;
 }
@@ -446,7 +466,7 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "streamcrypt.net")) {
         newEl = createIconImg("https://streamcrypt.net/logo.png", iconId);
         insertAsLastChild(destinationElement, newEl);
-    } else if (contains(href, "streamhub.to")) {
+    } else if (contains(href, "streamhub.to") || contains(href, "streamhub.gg")) {
         newEl = createIconImg("https://streamhub.to/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "k2s.cc")) {
@@ -493,7 +513,6 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return;
         }
     }
-
     externalLinks.forEach((link, index) => {
         var href = link.href;
         var selector;
@@ -523,7 +542,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
-        } else if (contains(href, 'doodstream.com') || contains(href, 'dood.wf')) {
+        } else if (contains(href, 'dood.re') || contains(href, 'dood.so') || contains(href, 'doodstream.com') || contains(href, 'dood.to') || contains(href, 'doodapi.com') || contains(href, 'dood.watch') || contains(href, 'dood.cx') || contains(href, 'doodstream.co') || contains(href, 'dood.la') || contains(href, 'dood.ws') || contains(href, 'dood.pm') || contains(href, 'dood.sh') || contains(href, 'dood.one') || contains(href, 'dood.tech') || contains(href, 'dood.wf') || contains(href, 'dood.yt')|| contains(href, 'dood.com')|| contains(href, 'dooood.com')) {
             selector = 'div.size';
             href = href.replace('/e/','/d/');
             // fix to show filesizes
@@ -543,9 +562,23 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'fikper.com')) {
-            selector = 'div.MuiStack-root div.MuiStack-root div.MuiStack-root div.MuiStack-root div.MuiStack-root p.MuiTypography-root.MuiTypography-body1:nth-child(2)';
-            // needs javascript enabled
-            // httpGETWithCORSbypass(href, selector, link, box, index);
+            selector = undefined;
+            var fileHash = href;
+            if (contains(fileHash, '#')) {
+                fileHash = fileHash.substring(0, fileHash.indexOf('#'));
+            }
+            if (contains(fileHash, '?')) {
+                fileHash = fileHash.substring(0, fileHash.indexOf('?'));
+            }
+            fileHash = fileHash.substring(fileHash.indexOf('fikper.com/') + 11);
+            var data = '{"fileHashName":"' + fileHash + '"}';
+            href = 'https://sapi.fikper.com/'
+            httpPOSTWithCORSbypass(href, selector, link, box, index, data);
+            return;
+        } else if (contains(href, 'filelions.to')) {
+            href = href.replace('/v/','/f/');
+            // fix to show filesizes
+            link.href = href;
             return;
         }
 
@@ -625,6 +658,58 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 }
             } else {
                 size = "-";
+            }
+            link.innerText = linkText + " " + size;
+            addSizeToIcon(box, link.href, size, index);
+        },
+        ontimeout: function(response) {
+            console.log('ontimeout');
+            link.innerText = linkText + " timeout!";
+        },
+        onerror: function(response) {
+            link.innerText = linkText + " error: " + response.error;
+            console.log(response);
+        },
+    });
+}
+
+function httpPOSTWithCORSbypass(url, selector, link, box, index, data) {
+    var linkText = link.innerText;
+    link.innerText = linkText + " ...";
+    GM.xmlHttpRequest({
+        method: "POST",
+        url: url,
+        data: data,
+        headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Referer": url,
+        },
+        onload: function(response) {
+            debugger;
+            if (selector!=undefined) {
+                var dom2 = htmlToElement(response.responseText);
+                var size = dom2.querySelector(selector);
+                if (size != null) {
+                    size = size.innerText;
+                    size = size.trim();
+                    size = size.replace('Size', '');
+                    size = size.replace('(','').replace(')','');
+                    if (size.length == 0 || contains(size, 'Earn money') || contains(size, 'File Not Found') || contains(size, 'deleted')) {
+                        size = "-";
+                    }
+                    if (contains(url, 'filefactory.com')) {
+                        size = size.replace(/ uploaded.*/, '');
+                    }
+                } else {
+                    size = "-";
+                }
+            } else {
+                if (contains(url, 'fikper.com')) {
+                    size = getStringByRegex(response.responseText, /"size":"(\d+)",/);
+                    size = parseInt(parseInt(size)/1024/1024) + " MB";
+                }
             }
             link.innerText = linkText + " " + size;
             addSizeToIcon(box, link.href, size, index);
@@ -736,7 +821,11 @@ function loadNextPage() {
             // find existing ones in the new ones and save index to delete to avoid deleting while iterating
             $newElements.each(function(i, newItem) {
                 if (newItem != undefined) {
-                    var newHref = $(newItem).find('a.js-pop').first().attr('href');
+                    var movieLink = $(newItem).find('a.js-pop').first();
+                    if (movieLink == undefined) {
+                        movieLink = $(newItem).find('.post_control>a').first();
+                    }
+                    var newHref = movieLink.attr('href');
                     var newMovieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
                     var exists = false;
                     $oldElements.each(function(j, old) {
@@ -1091,8 +1180,12 @@ function addButtonToGetMovieSize(box) {
 }
 
 function go(box) {
-    var moviePageUrl = box.querySelector('a.js-pop').href;
-    downloadGetMovieSizeAndAddNewElement(moviePageUrl, box);
+    var movieLink = box.querySelector('a.js-pop');
+    if (movieLink == undefined) {
+        movieLink = box.querySelector('.post_control>a');
+    }
+    var movieHref = movieLink.href;
+    downloadGetMovieSizeAndAddNewElement(movieHref, box);
 }
 
 function setMovieSize(movieSize, el) {
@@ -1141,7 +1234,7 @@ function updateStreamhubToHrefForBoxView(box, movieSize) {
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx')) {
                 // just including filesize in the link
                 var normalSize = box.querySelector('.movieSize').innerText.replace(' ','');
                 link.href = link.href + '#' + normalSize;
@@ -1158,7 +1251,7 @@ function updateStreamhubToHrefForSingleMoviePage(box) {
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx')) {
                 // just including filesize in the link
                 var normalSize = $('div.post_control').first().prev().text();
                 const regex = /size:(\d+)/i;
