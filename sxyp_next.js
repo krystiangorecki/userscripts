@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.06
+// @version      2.08
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -33,6 +33,7 @@
 // @connect      dood.tech
 // @connect      dood.wf
 // @connect      dood.yt
+// @connect      doods.pro
 // @connect      upvideo.to
 // @connect      highload.to
 // @connect      rapidgator.net
@@ -42,6 +43,9 @@
 // @connect      rapidcloud.cc
 // @connect      fikper.com
 // @connect      wolfstream.tv
+// @connect      embedrise.com
+// @connect      vidmoly.to
+// @connect      vidmoly.me
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -79,6 +83,8 @@
 // v2.04 fixed /e/ -> /d/ for dood and its alternatives
 // v2.05 fixed alternative movie link
 // v2.06 tricky fikper size loading by posting json
+// v2.07 embedrise.com
+// v2.08 vidmoly.to
 
 // TODO clickable icons
 
@@ -315,6 +321,7 @@ function loadSizesOfExternalLinks() {
             convertFilefactoryTextToLink(postText);
             convertUpfilesTextToLink(postText);
             convertFilelionsTextToLink(postText);
+            convertEmbedriseTextToLink(postText);
             var allExternalLinks = postText.querySelectorAll('a.extlink');
             if (allExternalLinks.length > 0) {
                 let movieId = getMovieId(postBox);
@@ -339,6 +346,7 @@ function loadSizesOfExternalLinks() {
             convertFilefactoryTextToLink(box);
             convertUpfilesTextToLink(box);
             convertFilelionsTextToLink(box);
+            convertEmbedriseTextToLink(box);
             var externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
                 externalLinksForThisBox.forEach((link, index) => {
@@ -372,6 +380,12 @@ function convertFilelionsTextToLink(postText){
     if (contains(postText.innerText, 'filelions.to')) {
         var url = getStringByRegex(postText.innerText, /(https:\/\/filelions\.to\/v\/[a-zA-Z0-9]+)/);
         postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">filelions.to</a>');
+    }
+}
+function convertEmbedriseTextToLink(postText){
+    if (contains(postText.innerText, 'embedrise.com')) {
+        var url = getStringByRegex(postText.innerText, /(https:\/\/embedrise\.com\/d\/[a-zA-Z0-9]+)/);
+        postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">embedrise.com</a>');
     }
 }
 
@@ -454,6 +468,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "vtube.to")) {
         newEl = createIconImg("https://vtube.to/src/img-min/logo/favicon.png", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "vtbe.to")) {
+        newEl = createIconImg("https://vtbe.to/src/img-min/logo/favicon.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "upvideo")) {
         newEl = createIconImg("https://upvideo.to/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
@@ -492,6 +509,12 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "filelions.to")) {
         newEl = createIconImg("https://filelions.to/theme/images/favicon/favicon-16x16.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "vidmoly.to") || contains(href, "vidmoly.me")) {
+        newEl = createIconImg(" https://vidmoly.to/img/faviconm.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "embedrise.com")) {
+        newEl = createIconImg("https://embedrise.com/assets/images/ico/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
@@ -542,7 +565,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
-        } else if (contains(href, 'dood.re') || contains(href, 'dood.so') || contains(href, 'doodstream.com') || contains(href, 'dood.to') || contains(href, 'doodapi.com') || contains(href, 'dood.watch') || contains(href, 'dood.cx') || contains(href, 'doodstream.co') || contains(href, 'dood.la') || contains(href, 'dood.ws') || contains(href, 'dood.pm') || contains(href, 'dood.sh') || contains(href, 'dood.one') || contains(href, 'dood.tech') || contains(href, 'dood.wf') || contains(href, 'dood.yt')|| contains(href, 'dood.com')|| contains(href, 'dooood.com')) {
+        } else if (contains(href, 'dood.re') || contains(href, 'dood.so') || contains(href, 'doodstream.com') || contains(href, 'dood.to') || contains(href, 'doodapi.com') || contains(href, 'dood.watch') || contains(href, 'dood.cx') || contains(href, 'doodstream.co') || contains(href, 'dood.la') || contains(href, 'dood.ws') || contains(href, 'dood.pm') || contains(href, 'dood.sh') || contains(href, 'dood.one') || contains(href, 'dood.tech') || contains(href, 'dood.wf') || contains(href, 'dood.yt')|| contains(href, 'dood.com')|| contains(href, 'dooood.com') || contains(href, 'doods.pro')) {
             selector = 'div.size';
             href = href.replace('/e/','/d/');
             // fix to show filesizes
@@ -559,6 +582,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return;
         } else if (contains(href, 'rapidcloud.cc')) {
             selector = '#container div.name > span:nth-child(3)';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'embedrise.com')) {
+            selector = 'i.bx-save + strong';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'fikper.com')) {
@@ -579,6 +606,21 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             href = href.replace('/v/','/f/');
             // fix to show filesizes
             link.href = href;
+            return;
+        } else if (contains(href, '//vidmoly.to') || contains(href, '//vidmoly.me')) {
+            debugger;
+            href = href.replace('vidmoly.me','vidmoly.to');
+            if (contains(href, '/w/')) {
+                var movieId = getStringByRegex(href, /\/w\/(.+)/);
+                href = 'https://vidmoly.to/' + movieId + '.html';
+            }
+            if (contains(href, 'https://vidmoly.to/embed-')) {
+                var movieId = getStringByRegex(href, /\/embed-(.+?)\.html/);
+                href = 'https://vidmoly.to/' + movieId + '.html';
+            }
+            selector = '#video-content .vid-d .box a';
+            link.href = href;
+            httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         }
 
@@ -649,12 +691,16 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                     size = size.replace(/.*\(/, '(');
                 }
                 size = size.replace('Size', '');
+                size = size.replace('Download', '');
                 size = size.replace('(','').replace(')','');
                 if (size.length == 0 || contains(size, 'Earn money') || contains(size, 'File Not Found') || contains(size, 'deleted')) {
                     size = "-";
                 }
                 if (contains(url, 'filefactory.com')) {
                     size = size.replace(/ uploaded.*/, '');
+                }
+                if (contains(url, 'embedrise.com')) {
+                    size = size.replace(',', '').replace('.',',');
                 }
             } else {
                 size = "-";
@@ -1234,7 +1280,7 @@ function updateStreamhubToHrefForBoxView(box, movieSize) {
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx') || contains(link.href, 'embedrise.com') || contains(link.href, 'vtbe.to')) {
                 // just including filesize in the link
                 var normalSize = box.querySelector('.movieSize').innerText.replace(' ','');
                 link.href = link.href + '#' + normalSize;
@@ -1251,7 +1297,7 @@ function updateStreamhubToHrefForSingleMoviePage(box) {
     var externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
-            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx')) {
+            if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx') || contains(link.href, 'embedrise.com')|| contains(link.href, 'vtbe.to')) {
                 // just including filesize in the link
                 var normalSize = $('div.post_control').first().prev().text();
                 const regex = /size:(\d+)/i;
