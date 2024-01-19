@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.08
+// @version      2.10
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -33,6 +33,9 @@
 // @connect      dood.tech
 // @connect      dood.wf
 // @connect      dood.yt
+// @connect      d0o0d.com
+// @connect      do0od.com
+// @connect      ds2play.com
 // @connect      doods.pro
 // @connect      upvideo.to
 // @connect      highload.to
@@ -46,6 +49,8 @@
 // @connect      embedrise.com
 // @connect      vidmoly.to
 // @connect      vidmoly.me
+// @connect      megaup.net
+// @connect      frdl.to
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -84,7 +89,9 @@
 // v2.05 fixed alternative movie link
 // v2.06 tricky fikper size loading by posting json
 // v2.07 embedrise.com
-// v2.08 vidmoly.to
+// v2.08 wolfstream.tv size
+// v2.09 megaup.net size
+// v2.10 frdl.to size
 
 // TODO clickable icons
 
@@ -516,6 +523,12 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "embedrise.com")) {
         newEl = createIconImg("https://embedrise.com/assets/images/ico/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "megaup.net")) {
+        newEl = createIconImg("https://megaup.net/themes/flow/frontend_assets/images/icons/favicon/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "frdl.to")) {
+        newEl = createIconImg("https://frdl.to/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
         insertAsLastChild(destinationElement, newEl);
@@ -588,6 +601,18 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             selector = 'i.bx-save + strong';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
+        } else if (contains(href, 'wolfstream.tv')) {
+            selector = '.tbl1 td:nth-child(2)';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'megaup.net')) {
+            selector = '.responsiveInfoTable';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'frdl.to')) {
+            selector = '.container .name>span';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         } else if (contains(href, 'fikper.com')) {
             selector = undefined;
             var fileHash = href;
@@ -608,7 +633,6 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             link.href = href;
             return;
         } else if (contains(href, '//vidmoly.to') || contains(href, '//vidmoly.me')) {
-            debugger;
             href = href.replace('vidmoly.me','vidmoly.to');
             if (contains(href, '/w/')) {
                 var movieId = getStringByRegex(href, /\/w\/(.+)/);
@@ -702,6 +726,10 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 if (contains(url, 'embedrise.com')) {
                     size = size.replace(',', '').replace('.',',');
                 }
+                if (contains(url, 'megaup.net')) {
+                    var needle = ": ";
+                    size = size.substring(size.lastIndexOf (needle) + needle.length);
+                }
             } else {
                 size = "-";
             }
@@ -733,7 +761,6 @@ function httpPOSTWithCORSbypass(url, selector, link, box, index, data) {
             "Referer": url,
         },
         onload: function(response) {
-            debugger;
             if (selector!=undefined) {
                 var dom2 = htmlToElement(response.responseText);
                 var size = dom2.querySelector(selector);
@@ -834,10 +861,10 @@ function updateButtonNumber() {
 
 function loadNextPage() {
     blockButton();
-
+    var isAsmPage = pageUrl.endsWith('asm/');
     var nextPageUrl;
     var indexOfPageParameter = pageUrl.indexOf('page=');
-    if (pageUrl.endsWith('asm/')) {
+    if (isAsmPage) {
         nextPageUrl = pageUrl.substring(0, pageUrl.lastIndexOf('/')+1) + nextPageNumber;
     } else {
         if (indexOfPageParameter > 0) {
