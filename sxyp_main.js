@@ -10,7 +10,7 @@
 // @match        https://sxyp/o/*
 // @match        https://sxyp/*.html*
 // @match        https://sxyp/
-// @version      1.71
+// @version      1.72
 // @grant        GM_addStyle
 // @run-at       document-end
 // ==/UserScript==
@@ -23,6 +23,7 @@
 //v1.5 added external icons + small fixes
 //v1.7 moved progress numbers to another script
 //v1.71 minor url replacement fixes
+//v1.72 mat6 search
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
@@ -47,6 +48,7 @@ GM_addStyle(' .pes_author_div {   user-select: none; } ');
     addCopyLinkButton();
     addCopyButton();
     addDownloadButton();
+    addMat6SearchLink();
     removeLayerOverThePlayer();
     redirectToDVMirrorSite();
     showLinkForEachSceneInCaseOfComboContainer();
@@ -283,6 +285,24 @@ function cleanTitle() {
     title = title.replace(/  /g , " ");
 
     return title;
+}
+
+function addMat6SearchLink() {
+    var destination = document.querySelector('.search_bar');
+    if (destination == null) {
+        return;
+    }
+    var newLink = document.createElement("a");
+    newLink.text = "[mat6]";
+    newLink.setAttribute("id", "mat6search");
+    newLink.setAttribute("style", "color:#FFFFFF;position:absolute;right: 70px;");
+    newLink.onclick = searchMat6;
+    insertAsFirstChild(destination, newLink);
+}
+
+function searchMat6() {
+    var searchTerm = document.querySelector('#se_in').value;
+    window.open('https://mat6tube.com/video/' + searchTerm);
 }
 
 function addCopyLinkButton() {
