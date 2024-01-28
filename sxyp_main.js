@@ -10,7 +10,7 @@
 // @match        https://sxyp/o/*
 // @match        https://sxyp/*.html*
 // @match        https://sxyp/
-// @version      1.72
+// @version      1.73
 // @grant        GM_addStyle
 // @run-at       document-end
 // ==/UserScript==
@@ -24,6 +24,7 @@
 //v1.7 moved progress numbers to another script
 //v1.71 minor url replacement fixes
 //v1.72 mat6 search
+//v1.73 fixed -amp- replacement
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
@@ -96,7 +97,7 @@ function removeUnnecessaryElements() {
 function redirectIfSearchQueryContainsAnd() {
     var url = window.location.href;
     if (url.includes('-and-') || url.includes('-And-') || url.includes('%20And%20') || url.includes('-amp-') || url.includes('%E2%80%93') || url.includes('--') ) {
-        var newurl = url.replace('-and-', '-').replace('-And-', '-').replace('%20And%20', '-').replace('-amp-', ' ').replace('%E2%80%93', '-').replace('--', '-');
+        var newurl = url.replace('-and-', '-').replace('-And-', '-').replace('%20And%20', '-').replace('-amp-', '-').replace('%E2%80%93', '-').replace('--', '-');
         window.location = newurl;
     }
 }
