@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.10
+// @version      2.11
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -51,6 +51,7 @@
 // @connect      vidmoly.me
 // @connect      megaup.net
 // @connect      frdl.to
+// @connect      iceyfile.com
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -92,6 +93,7 @@
 // v2.08 wolfstream.tv size
 // v2.09 megaup.net size
 // v2.10 frdl.to size
+// v2.11 iceyfile.com
 
 // TODO clickable icons
 
@@ -529,6 +531,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "frdl.to")) {
         newEl = createIconImg("https://frdl.to/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "iceyfile.com")) {
+        newEl = createIconImg("https://iceyfile.com/themes/spirit/assets/frontend/img/favicon/favicon-16x16.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
         insertAsLastChild(destinationElement, newEl);
@@ -611,6 +616,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return;
         } else if (contains(href, 'frdl.to')) {
             selector = '.container .name>span';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'iceyfile.com')) {
+            selector = '.responsiveInfoTable strong';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'fikper.com')) {
@@ -713,6 +722,8 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 size = size.trim();
                 if (contains(url, 'upfiles.com')) {
                     size = size.replace(/.*\(/, '(');
+                } else if (contains(url, 'iceyfile.com')) {
+                    size = size.replace(/.*\(/, '(');
                 }
                 size = size.replace('Size', '');
                 size = size.replace('Download', '');
@@ -722,11 +733,9 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 }
                 if (contains(url, 'filefactory.com')) {
                     size = size.replace(/ uploaded.*/, '');
-                }
-                if (contains(url, 'embedrise.com')) {
+                } else if (contains(url, 'embedrise.com')) {
                     size = size.replace(',', '').replace('.',',');
-                }
-                if (contains(url, 'megaup.net')) {
+                } else if (contains(url, 'megaup.net')) {
                     var needle = ": ";
                     size = size.substring(size.lastIndexOf (needle) + needle.length);
                 }
