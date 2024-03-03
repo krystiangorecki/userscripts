@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.11
+// @version      2.13
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -35,6 +35,8 @@
 // @connect      dood.yt
 // @connect      d0o0d.com
 // @connect      do0od.com
+// @connect      d0000d.com
+// @connect      d000d.com
 // @connect      ds2play.com
 // @connect      doods.pro
 // @connect      upvideo.to
@@ -52,6 +54,7 @@
 // @connect      megaup.net
 // @connect      frdl.to
 // @connect      iceyfile.com
+// @connect      iceyfile.net
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -94,6 +97,8 @@
 // v2.09 megaup.net size
 // v2.10 frdl.to size
 // v2.11 iceyfile.com
+// v2.12 iceyfile.net
+// v2.13 fixed wolfstream size
 
 // TODO clickable icons
 
@@ -534,6 +539,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "iceyfile.com")) {
         newEl = createIconImg("https://iceyfile.com/themes/spirit/assets/frontend/img/favicon/favicon-16x16.png", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "iceyfile.net")) {
+        newEl = createIconImg("http://www.google.com/s2/favicons?domain=iceyfile.net", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
         insertAsLastChild(destinationElement, newEl);
@@ -607,7 +615,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'wolfstream.tv')) {
-            selector = '.tbl1 td:nth-child(2)';
+            selector = '.tbl1 td:nth-child(2), form#F1 > button';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'megaup.net')) {
@@ -620,6 +628,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return;
         } else if (contains(href, 'iceyfile.com')) {
             selector = '.responsiveInfoTable strong';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'iceyfile.net')) {
+            selector = '#oyraid_app_toolbar_container .text-white.fw-bold.fs-3.mb-1';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'fikper.com')) {
@@ -724,6 +736,9 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                     size = size.replace(/.*\(/, '(');
                 } else if (contains(url, 'iceyfile.com')) {
                     size = size.replace(/.*\(/, '(');
+                } else if (contains(url, 'wolfstream.tv')) {
+                    var needle = "\n";
+                    size = size.substring(size.lastIndexOf (needle) + needle.length);
                 }
                 size = size.replace('Size', '');
                 size = size.replace('Download', '');
