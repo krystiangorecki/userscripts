@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.13
+// @version      2.15
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -55,6 +55,7 @@
 // @connect      frdl.to
 // @connect      iceyfile.com
 // @connect      iceyfile.net
+// @connect      send.cm
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -99,6 +100,8 @@
 // v2.11 iceyfile.com
 // v2.12 iceyfile.net
 // v2.13 fixed wolfstream size
+// v2.14 send.cm
+// v2.15 some premium checks
 
 // TODO clickable icons
 
@@ -542,6 +545,9 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "iceyfile.net")) {
         newEl = createIconImg("http://www.google.com/s2/favicons?domain=iceyfile.net", iconId);
         insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "send.cm")) {
+        newEl = createIconImg("https://send.cm/favicon.ico", iconId);
+        insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
         insertAsLastChild(destinationElement, newEl);
@@ -667,6 +673,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
+        } else if (contains(href, 'send.cm')) {
+            selector = '#downloadbtn';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         }
 
         if (selector == undefined) {
@@ -741,6 +751,7 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                     size = size.substring(size.lastIndexOf (needle) + needle.length);
                 }
                 size = size.replace('Size', '');
+                size = size.replace('[', '').replace(']', '')
                 size = size.replace('Download', '');
                 size = size.replace('(','').replace(')','');
                 if (size.length == 0 || contains(size, 'Earn money') || contains(size, 'File Not Found') || contains(size, 'deleted')) {
@@ -754,8 +765,22 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                     var needle = ": ";
                     size = size.substring(size.lastIndexOf (needle) + needle.length);
                 }
+                // premium check
+                if (contains(url, 'rapidgator.net')) {
+                    var table = dom2.querySelector("#table_header");
+                    if (table.innerText.includes("Premium")) {
+                        size = size + '[P]';
+                    }
+                }
             } else {
                 size = "-";
+                // premium check
+                if (contains(url, 'frdl.to')) {
+                    var table = dom2.querySelector("#container .err");
+                    if (table.innerText.includes("Premium Users only")) {
+                        size = '[P]';
+                    }
+                }
             }
             link.innerText = linkText + " " + size;
             addSizeToIcon(box, link.href, size, index);
