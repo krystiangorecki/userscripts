@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.15
+// @version      2.18
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -56,6 +56,8 @@
 // @connect      iceyfile.com
 // @connect      iceyfile.net
 // @connect      send.cm
+// @connect      vidguard.to
+// @connect      listeamed.net
 // @run-at       document-end
 // ==/UserScript==
 // v1.4 fixed redundant size loading for dynamically loaded pages
@@ -102,6 +104,9 @@
 // v2.13 fixed wolfstream size
 // v2.14 send.cm
 // v2.15 some premium checks
+// v2.16 more send.cm
+// v2.17 media.cm icon
+// v2.18 vidguard/listeamed
 
 // TODO clickable icons
 
@@ -546,7 +551,13 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
         newEl = createIconImg("http://www.google.com/s2/favicons?domain=iceyfile.net", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "send.cm")) {
-        newEl = createIconImg("https://send.cm/favicon.ico", iconId);
+        newEl = createIconImg("http://www.google.com/s2/favicons?domain=iceyfile.net", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "media.cm")) {
+        newEl = createIconImg("https://media.cm/favicon-32.png", iconId);
+        insertAsLastChild(destinationElement, newEl);
+    } else if (contains(href, "vidguard.to")) {
+        newEl = createIconImg("https://listeamed.net/assets/img/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else {
         newEl = document.createTextNode("[?]");
@@ -638,6 +649,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return;
         } else if (contains(href, 'iceyfile.net')) {
             selector = '#oyraid_app_toolbar_container .text-white.fw-bold.fs-3.mb-1';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'vidguard.to')) {
+            selector = '.btn-light';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         } else if (contains(href, 'fikper.com')) {
@@ -778,6 +793,12 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 if (contains(url, 'frdl.to')) {
                     var table = dom2.querySelector("#container .err");
                     if (table.innerText.includes("Premium Users only")) {
+                        size = '[P]';
+                    }
+                }
+                if (contains(url, 'send.cm')) {
+                    var table = dom2.querySelector(".container .alert-warning");
+                    if (table.innerText.includes("Premium Users")) {
                         size = '[P]';
                     }
                 }
@@ -950,10 +971,14 @@ function loadNextPage() {
                     var newHref = movieLink.attr('href');
                     var newMovieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
                     var exists = false;
+                    // console.log("new movie id " + newMovieId);
                     $oldElements.each(function(j, old) {
                         var href = $(old).find('a.js-pop').first().attr('href');
+                        if (href == undefined) {
+                            href = $(old).find('.post_control>a').first().attr('href');
+                        }
                         var movieId = getStringByRegex(href,/\/([0-9a-f]+)\.html/);
-                        // console.log('checking new vs old  ' + newMovieId + ' == ' + movieId );
+                        // console.log('checking new vs old  ' + newMovieId + ' == ' + movieId);
                         if (newMovieId == movieId) {
                             exists = true;
                             indexesToRemove.push(i);
@@ -981,6 +1006,62 @@ function loadNextPage() {
             } else {
                 unblockButton();
             }
+
+            $oldElements = $('.post_el_small');
+            // from old elements remove boxes found on the main page
+            if (isAsmPage) {
+                findMovieIdsPresentOnMainPage($oldElements);
+            }
+        }
+    } );
+}
+
+function findMovieIdsPresentOnMainPage($oldElements){
+
+    var idsFromTheFirstPage = [];
+    $.ajax ( {
+        type:       'GET',
+        url:        window.location.origin,
+        dataType:   'html',
+        success:    function (data) {
+            var $page = $(data);
+            var $newElements = $page.find('.main_content .post_el_small');
+            var indexesToRemove = [];
+            debugger;
+            $newElements.each(function(i, newItem) {
+                if (newItem != undefined) {
+                    var movieLink = $(newItem).find('a.js-pop').first();
+                    if (movieLink == undefined) {
+                        movieLink = $(newItem).find('.post_control>a').first();
+                    }
+                    var newHref = movieLink.attr('href');
+                    var movieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
+                    idsFromTheFirstPage.push(movieId);
+                }
+            });
+
+            var oldIndexesToRemove = [];
+            $oldElements.each(function(i, oldItem) {
+                $(idsFromTheFirstPage).each(function(j, fromFirst) {
+                    var exists = false;
+                    var href = $(oldItem).find('a.js-pop').first().attr('href');
+                    if(href == undefined) {
+                        href = $(oldItem).find('.post_control>a').first().attr('href');
+                    }
+                    var oldMovieId = getStringByRegex(href,/\/([0-9a-f]+)\.html/);
+                    console.log('checking first vs oldMovieId  ' + fromFirst + ' == ' + oldMovieId);
+                    if (fromFirst == oldMovieId) {
+                        exists = true;
+                        oldIndexesToRemove.push(i);
+                    }
+                });
+            });
+            for (var i = oldIndexesToRemove.length - 1; i >= 0; i--) {
+                var indexToRemove = oldIndexesToRemove[i];
+                $oldElements.get(indexToRemove).firstElementChild.firstElementChild.classList.add('red');
+                // $oldElements.get(indexToRemove).innerHTML = '';
+            }
+            clickHideRedButton();
         }
     } );
 }
