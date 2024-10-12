@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.18
+// @version      2.20
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -33,6 +33,7 @@
 // @connect      dood.tech
 // @connect      dood.wf
 // @connect      dood.yt
+// @connect      dood.li
 // @connect      d0o0d.com
 // @connect      do0od.com
 // @connect      d0000d.com
@@ -57,6 +58,7 @@
 // @connect      iceyfile.net
 // @connect      send.cm
 // @connect      vidguard.to
+// @connect      go-streamer.net
 // @connect      listeamed.net
 // @run-at       document-end
 // ==/UserScript==
@@ -107,6 +109,8 @@
 // v2.16 more send.cm
 // v2.17 media.cm icon
 // v2.18 vidguard/listeamed
+// v2.19 clickable time copies link to clipboard
+// v2.20 redraw lines on window resize
 
 // TODO clickable icons
 
@@ -141,6 +145,7 @@ var pageUrl = window.location.href;
     addButtonToSortByTimeAndSizeIncludingExternals();
     addButtonToSortByTimeAndSize();
     addButtonToSortBySize();
+    makeTimeElementCopyLinkToClipboard();
 })();
 
 
@@ -383,6 +388,16 @@ function loadSizesOfExternalLinks() {
             }
         });
     }
+    addResizeListener();
+}
+
+function addResizeListener() {
+    window.addEventListener('resize', function() {
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+        console.log(`Window resized to: ${width}x${height}`);
+        draw();
+    });
 }
 
 /** Czasami linki do filefactory.com nie są linkami a zwyklym tekstem. Podmieniam je na link jeszcze przed dodaniem ikon i rozmiarów. */
@@ -1472,6 +1487,16 @@ function updateStreamhubToHrefForSingleMoviePage(box) {
 }
 
 
+function makeTimeElementCopyLinkToClipboard() {
+    debugger;
+    var times = document.querySelectorAll('.duration_small');
+    times.forEach((span) => span.addEventListener('click', function (event) {
+        event.preventDefault();
+        var url = event.currentTarget.closest('a.js-pop');
+        setTimeout( function() { copyTextToClipboard(url); } , 100);
+    }));
+}
+
 function addResultToMap(el, size) {
     var duration = el.getElementsByClassName('duration_small')[0].innerText;
     size = parseInt(size);
@@ -1575,4 +1600,62 @@ function getStringByRegex(text, regex) {
 
 function contains(haystack, needle) {
     return haystack.indexOf(needle) > -1;
+}
+
+// copying requires hidden textarea
+function copyTextToClipboard(text) {
+    var textArea = document.createElement("textarea");
+
+    //
+    // *** This styling is an extra step which is likely not required. ***
+    //
+    // Why is it here? To ensure:
+    // 1. the element is able to have focus and selection.
+    // 2. if element was to flash render it has minimal visual impact.
+    // 3. less flakyness with selection and copying which **might** occur if
+    //    the textarea element is not visible.
+    //
+    // The likelihood is the element won't even render, not even a flash,
+    // so some of these are just precautions. However in IE the element
+    // is visible whilst the popup box asking the user for permission for
+    // the web page to copy to the clipboard.
+    //
+
+    // Place in top-left corner of screen regardless of scroll position.
+    textArea.style.position = 'fixed';
+    textArea.style.top = 0;
+    textArea.style.left = 0;
+
+    // Ensure it has a small width and height. Setting to 1px / 1em
+    // doesn't work as this gives a negative w/h on some browsers.
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+
+    // We don't need padding, reducing the size if it does flash render.
+    textArea.style.padding = 0;
+
+    // Clean up any borders.
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+
+    // Avoid flash of white box if rendered for any reason.
+    textArea.style.background = 'transparent';
+
+
+    textArea.value = text;
+
+    document.body.appendChild(textArea);
+
+    textArea.select();
+
+    try {
+        var successful = document.execCommand('copy');
+        var msg = successful ? 'successful' : 'unsuccessful';
+        //console.log('Copying text command was ' + msg);
+    } catch (err) {
+        //console.log('Oops, unable to copy');
+    }
+
+    document.body.removeChild(textArea);
 }
