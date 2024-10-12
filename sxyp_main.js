@@ -10,7 +10,7 @@
 // @match        https://sxyp/o/*
 // @match        https://sxyp/*.html*
 // @match        https://sxyp/
-// @version      1.73
+// @version      1.74
 // @grant        GM_addStyle
 // @run-at       document-end
 // ==/UserScript==
@@ -25,6 +25,7 @@
 //v1.71 minor url replacement fixes
 //v1.72 mat6 search
 //v1.73 fixed -amp- replacement
+//v1.74 cursor: grabbing
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
@@ -296,14 +297,14 @@ function addMat6SearchLink() {
     var newLink = document.createElement("a");
     newLink.text = "[mat6]";
     newLink.setAttribute("id", "mat6search");
-    newLink.setAttribute("style", "color:#FFFFFF;position:absolute;right: 70px;");
+    newLink.setAttribute("style", "color:#FFFFFF;position:absolute;right: 70px; cursor: pointer;");
     newLink.onclick = searchMat6;
     insertAsFirstChild(destination, newLink);
 }
 
 function searchMat6() {
     var searchTerm = document.querySelector('#se_in').value;
-    window.open('https://mat6tube.com/video/' + searchTerm);
+    window.open('https://mat6tube.tv/video/' + searchTerm);
 }
 
 function addCopyLinkButton() {
@@ -484,7 +485,7 @@ function markExternalLinks() {
         } else if (contains(text, "ddownload")) {
             newStyle ="border:2px solid #093094";
         } else if (contains(text, "rapidgator")) {
-            newStyle ="border:2px solid #bb4500";
+            // newStyle ="border:2px solid #bb4500"
         }
         boxes[i].parentNode.style = newStyle;
     }
