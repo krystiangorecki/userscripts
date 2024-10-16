@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.20
+// @version      2.21
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -62,6 +62,7 @@
 // @connect      listeamed.net
 // @run-at       document-end
 // ==/UserScript==
+/* globals jQuery, $, waitForKeyElements */
 // v1.4 fixed redundant size loading for dynamically loaded pages
 // v1.5 full external sizes loading with CORS bypass
 // v1.6 delayed line disappearance
@@ -111,9 +112,8 @@
 // v2.18 vidguard/listeamed
 // v2.19 clickable time copies link to clipboard
 // v2.20 redraw lines on window resize
-
-// TODO clickable icons
-
+// v2.21 redundant <template> removal
+// v2.21 using 'let'
 
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
@@ -123,14 +123,14 @@ GM_addStyle(' .a_name {  letter-spacing: -1px;  }');
 GM_addStyle(' .pes_author_div { color: #6ddede; font-size: 10px; letter-spacing: -1px; }');
 GM_addStyle(' .pes_author_div .a_name {font-size:9px; margin-left:0px}');
 
-var autoloadForEqualDurationTimes = true;
-var autoloadWhiteSizes = true;
+let autoloadForEqualDurationTimes = true;
+let autoloadWhiteSizes = true;
 let map = new Map();
 let mapEl = new Map();
-var downloadPending = 0;
-var nextPageNumber = 30;
-var maxPage;
-var pageUrl = window.location.href;
+let downloadPending = 0;
+let nextPageNumber = 30;
+let maxPage;
+let pageUrl = window.location.href;
 
 (function() {
     'use strict';
@@ -150,7 +150,7 @@ var pageUrl = window.location.href;
 
 
 function addButtonToSortByTimeAndSizeIncludingExternals() {
-    var newButton = document.createElement("a");
+    let newButton = document.createElement("a");
     newButton.id="mySortButton1";
     newButton.text=" sort ext ";
     newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
@@ -163,16 +163,16 @@ function addButtonToSortByTimeAndSizeIncludingExternals() {
         addVerticalProgressNumbers();
         if (downloadPending == 0) {
             highlightBiggestMovieSizes();
-            setTimeout (draw, 500);
+            setTimeout(draw, 500);
         }
     });
 
-    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    let destination = document.getElementsByClassName('splitter_block_header')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
     }
-    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    let tags = document.querySelectorAll('div.search_results a.htag_rel_a');
     destination = tags[tags.length-1];
     if (destination != undefined) {
         insertAfter(destination, newButton);
@@ -186,7 +186,7 @@ function addButtonToSortByTimeAndSizeIncludingExternals() {
 }
 
 function addButtonToSortByTimeAndSize() {
-    var newButton = document.createElement("a");
+    let newButton = document.createElement("a");
     newButton.id="mySortButton1";
     newButton.text=" sort by time and size ";
     newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
@@ -203,12 +203,12 @@ function addButtonToSortByTimeAndSize() {
         }
     });
 
-    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    let destination = document.getElementsByClassName('splitter_block_header')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
     }
-    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    let tags = document.querySelectorAll('div.search_results a.htag_rel_a');
     destination = tags[tags.length-1];
     if (destination != undefined) {
         insertAfter(destination, newButton);
@@ -222,7 +222,7 @@ function addButtonToSortByTimeAndSize() {
 }
 
 function addButtonToSortBySize() {
-    var newButton = document.createElement("a");
+    let newButton = document.createElement("a");
     newButton.id="mySortButton2";
     newButton.text=" sort by size ";
     newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
@@ -238,12 +238,12 @@ function addButtonToSortBySize() {
         }
     });
 
-    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    let destination = document.getElementsByClassName('splitter_block_header')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
     }
-    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    let tags = document.querySelectorAll('div.search_results a.htag_rel_a');
     destination = tags[tags.length-1];
     if (destination != undefined) {
         insertAfter(destination, newButton);
@@ -257,17 +257,17 @@ function addButtonToSortBySize() {
 }
 
 function doSortExternal() {
-    var $container = $('div.post_el_small').first().parent();
-    var $boxes = $('div.post_el_small');
+    let $container = $('div.post_el_small').first().parent();
+    let $boxes = $('div.post_el_small');
     $boxes.sort(function (b, a) {
-        var sizeElementsA = $(a).find('.movieSize,.extSize');
+        let sizeElementsA = $(a).find('.movieSize,.extSize');
         sizeElementsA = sizeElementsA.map(function() { return parseInt(this.innerText.replace(' M','000').replace(' G','000000').replaceAll(/[A-Z .]/g,'')) }).filter(function() { return this>0 });
-        var maxSizeA = Math.max(...sizeElementsA);
+        let maxSizeA = Math.max(...sizeElementsA);
 
-        var sizeElementsB = $(b).find('.movieSize,.extSize');
+        let sizeElementsB = $(b).find('.movieSize,.extSize');
         sizeElementsB = sizeElementsB.map(function() { return parseInt(this.innerText.replace(' M','000').replace(' G','000000').replaceAll(/[A-Z .]/g,'')) }).filter(function() { return this>0 });
-        var maxSizeB = Math.max(...sizeElementsB);
-        console.log(maxSizeA + ' ' + maxSizeB);
+        let maxSizeB = Math.max(...sizeElementsB);
+        // console.log(maxSizeA + ' ' + maxSizeB);
         if (maxSizeA < maxSizeB) return -1;
         if (maxSizeA > maxSizeB) return 1;
         return 0;
@@ -276,11 +276,11 @@ function doSortExternal() {
 }
 
 function doSortBySize() {
-    var $container = $('div.post_el_small').first().parent();
-    var $boxes = $('div.post_el_small');
+    let $container = $('div.post_el_small').first().parent();
+    let $boxes = $('div.post_el_small');
     $boxes.sort(function (b, a) {
-        var sizeA = parseInt( $(a).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
-        var sizeB = parseInt( $(b).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        let sizeA = parseInt( $(a).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        let sizeB = parseInt( $(b).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
         if (sizeA < sizeB) return -1;
         if (sizeA > sizeB) return 1;
         return 0;
@@ -289,17 +289,17 @@ function doSortBySize() {
 }
 
 function doSortByTimeAndSize() {
-    var $container = $('div.post_el_small').first().parent();
-    var $boxes = $('div.post_el_small');
+    let $container = $('div.post_el_small').first().parent();
+    let $boxes = $('div.post_el_small');
     $boxes.sort(function (b, a) {
-        var contentA = parseInt( $(a).find('.duration_small').text().replaceAll(':','') );
-        var contentB = parseInt( $(b).find('.duration_small').text().replaceAll(':','') );
+        let contentA = parseInt( $(a).find('.duration_small').text().replaceAll(':','') );
+        let contentB = parseInt( $(b).find('.duration_small').text().replaceAll(':','') );
         console.log(contentA + ' ' + contentB);
         if (contentA < contentB) return -1;
         if (contentA > contentB) return 1;
         // equal time, compare sizes
-        var sizeA = parseInt( $(a).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
-        var sizeB = parseInt( $(b).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        let sizeA = parseInt( $(a).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        let sizeB = parseInt( $(b).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
         if (sizeA < sizeB) return -1;
         if (sizeA > sizeB) return 1;
         return 0;
@@ -308,7 +308,7 @@ function doSortByTimeAndSize() {
 }
 
 function removeVerticalProgressNumbers() {
-    var existingNumbers = document.querySelectorAll('.progressNumber');
+    let existingNumbers = document.querySelectorAll('.progressNumber');
     for (let number of existingNumbers) {
         number.remove();
     }
@@ -318,10 +318,10 @@ function addVerticalProgressNumbers() {
 
     removeVerticalProgressNumbers();
 
-    var boxes = document.querySelectorAll('div.post_el_small');
-    for (var i = 1 ; i < boxes.length ; i++) {
+    let boxes = document.querySelectorAll('div.post_el_small');
+    for (let i = 1 ; i < boxes.length ; i++) {
         if ((i+1)%3 == 0) {
-            var newEl = document.createElement("span");
+            let newEl = document.createElement("span");
             newEl.innerText = '' + (i+1);
             newEl.classList.add('progressNumber');
             insertAfter(boxes[i], newEl);
@@ -329,13 +329,10 @@ function addVerticalProgressNumbers() {
     }
 }
 
-
-var imgTemplate = '<img src="https://www1.ddownload.com/images/favicon.ico" style="height: 16px">';
-
 function loadSizesOfExternalLinks() {
-    var postBoxes = document.querySelectorAll(".post_el_wrap");
-    var isSingleMoviePage = postBoxes.length == 1;
-    var isBlogPage = postBoxes.length >1;
+    let postBoxes = document.querySelectorAll(".post_el_wrap");
+    let isSingleMoviePage = postBoxes.length == 1;
+    let isBlogPage = postBoxes.length >1;
 
     if (isSingleMoviePage || isBlogPage) {
         // single movie page or blog page, loading all at once
@@ -344,18 +341,18 @@ function loadSizesOfExternalLinks() {
                 return;
             }
             postBox.classList.add('externalIconsAdded');
-            var postText = postBox.querySelector('.post_el_wrap div.post_text');
+            let postText = postBox.querySelector('.post_el_wrap div.post_text');
             convertFilefactoryTextToLink(postText);
             convertUpfilesTextToLink(postText);
             convertFilelionsTextToLink(postText);
             convertEmbedriseTextToLink(postText);
-            var allExternalLinks = postText.querySelectorAll('a.extlink');
+            let allExternalLinks = postText.querySelectorAll('a.extlink');
             if (allExternalLinks.length > 0) {
                 let movieId = getMovieId(postBox);
                 let uploaderName = postBox.querySelector('.a_name');
                 let destinationElement = uploaderName.parentElement.parentElement;
                 allExternalLinks.forEach((link, index) => {
-                    var href = link.href;
+                    let href = link.href;
                     addIconWithoutSize(movieId, href, index, destinationElement);
                 });
             }
@@ -364,7 +361,7 @@ function loadSizesOfExternalLinks() {
         });
     } else {
         // page with boxes, adding only listeners
-        var allBoxes = document.querySelectorAll('div.post_text');
+        let allBoxes = document.querySelectorAll('div.post_text');
         allBoxes.forEach(box => {
             if (box.classList.contains('externalIconsAdded')) {
                 return;
@@ -374,10 +371,10 @@ function loadSizesOfExternalLinks() {
             convertUpfilesTextToLink(box);
             convertFilelionsTextToLink(box);
             convertEmbedriseTextToLink(box);
-            var externalLinksForThisBox = box.querySelectorAll('a.extlink');
+            let externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
                 externalLinksForThisBox.forEach((link, index) => {
-                    var href = link.href;
+                    let href = link.href;
                     let movieId = getMovieId(box);
                     let container = getContainer(box);
                     let uploaderName = container.querySelector('.a_name');
@@ -403,36 +400,36 @@ function addResizeListener() {
 /** Czasami linki do filefactory.com nie są linkami a zwyklym tekstem. Podmieniam je na link jeszcze przed dodaniem ikon i rozmiarów. */
 function convertFilefactoryTextToLink(postText){
     if (contains(postText.innerText, 'https://www.filefactory.com')) {
-        var url = getStringByRegex(postText.innerText, /(https:\/\/www\.filefactory\.com\/file\/[a-z0-9]+)/);
+        let url = getStringByRegex(postText.innerText, /(https:\/\/www\.filefactory\.com\/file\/[a-z0-9]+)/);
         postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">filefactory.com</a>');
     }
 }
 function convertUpfilesTextToLink(postText){
     if (contains(postText.innerText, ' upfiles.com')) {
-        var url = getStringByRegex(postText.innerText, /(upfiles\.com\/f\/[a-zA-Z0-9]+)/);
+        let url = getStringByRegex(postText.innerText, /(upfiles\.com\/f\/[a-zA-Z0-9]+)/);
         postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">upfiles.com</a>');
     }
 }
 function convertFilelionsTextToLink(postText){
     if (contains(postText.innerText, 'filelions.to')) {
-        var url = getStringByRegex(postText.innerText, /(https:\/\/filelions\.to\/v\/[a-zA-Z0-9]+)/);
+        let url = getStringByRegex(postText.innerText, /(https:\/\/filelions\.to\/v\/[a-zA-Z0-9]+)/);
         postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">filelions.to</a>');
     }
 }
 function convertEmbedriseTextToLink(postText){
     if (contains(postText.innerText, 'embedrise.com')) {
-        var url = getStringByRegex(postText.innerText, /(https:\/\/embedrise\.com\/d\/[a-zA-Z0-9]+)/);
+        let url = getStringByRegex(postText.innerText, /(https:\/\/embedrise\.com\/d\/[a-zA-Z0-9]+)/);
         postText.innerHTML = postText.innerHTML.replace(url, '<a href="'+url+'" target="_blank" rel="nofollow" title=">External Link!<" class="extlink_icon extlink">embedrise.com</a>');
     }
 }
 
 function addSizeToIcon(box, href, size, index) {
 
-    var movieId = getMovieId(box);
-    var iconId = '#icon' + index + '-' + movieId;
+    let movieId = getMovieId(box);
+    let iconId = '#icon' + index + '-' + movieId;
 
-    var iconElement = document.querySelector(iconId);
-    var sizeElement = document.createElement("span");
+    let iconElement = document.querySelector(iconId);
+    let sizeElement = document.createElement("span");
     sizeElement.classList.add('extSize');
 
     size = size.replace('B','');
@@ -447,7 +444,7 @@ function addSizeToIcon(box, href, size, index) {
 }
 
 function getContainer(box, singleMoviePage) {
-    var container;
+    let container;
     if (singleMoviePage) {
         container = document;
     } else {
@@ -457,31 +454,31 @@ function getContainer(box, singleMoviePage) {
 }
 
 function getMovieId(box) {
-    var el = box.querySelector('div[data-postid]');
+    let el = box.querySelector('div[data-postid]');
     if (el != undefined) {
-        var movieIdFromData = el.dataset.postid;
+        let movieIdFromData = el.dataset.postid;
         if (movieIdFromData != undefined) {
             return movieIdFromData;
         }
     }
-    var movieLink = box.parentElement.querySelector('a.js-pop');
+    let movieLink = box.parentElement.querySelector('a.js-pop');
     if (movieLink == undefined) {
         movieLink = box.parentElement.querySelector('.post_control>a');
     }
-    var movieHref = movieLink.href;
-    var movieId = getStringByRegex(movieHref,/\/([0-9a-f]+)\.html/);
+    let movieHref = movieLink.href;
+    let movieId = getStringByRegex(movieHref,/\/([0-9a-f]+)\.html/);
     return movieId;
 }
 
 function addIconWithoutSize(movieId, href, index, destinationElement) {
 
-    var newEl;
-    var iconId = "icon" + index + '-' + movieId;
+    let newEl;
+    let iconId = "icon" + index + '-' + movieId;
     if (contains(href, "sbembed")) {
         newEl = createIconImg("https://sbembed.com/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "ddownload")) {
-        var iconLink = "http://ddownload.com/favicon.ico";
+        let iconLink = "http://ddownload.com/favicon.ico";
         if (contains(href, 'p6zkh48nakez')) {
             iconLink = 'https://via.placeholder.com/16/f00?text=%20';
         }
@@ -581,7 +578,7 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
 }
 
 function createIconImg(src, id) {
-    var newImg = document.createElement("img");
+    let newImg = document.createElement("img");
     newImg.src = src;
     newImg.id = id;
     newImg.style = 'height: 16px; margin-left:3px; margin-right:0px;color:#6ddede';
@@ -595,8 +592,8 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         }
     }
     externalLinks.forEach((link, index) => {
-        var href = link.href;
-        var selector;
+        let href = link.href;
+        let selector;
         if (contains(href, 'ddownload.com')) {
             selector = 'span.file-size, h2>font:last-child';
         } else if (contains(href, 'hexupload.net')) {
@@ -672,7 +669,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return;
         } else if (contains(href, 'fikper.com')) {
             selector = undefined;
-            var fileHash = href;
+            let fileHash = href;
             if (contains(fileHash, '#')) {
                 fileHash = fileHash.substring(0, fileHash.indexOf('#'));
             }
@@ -680,7 +677,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
                 fileHash = fileHash.substring(0, fileHash.indexOf('?'));
             }
             fileHash = fileHash.substring(fileHash.indexOf('fikper.com/') + 11);
-            var data = '{"fileHashName":"' + fileHash + '"}';
+            let data = '{"fileHashName":"' + fileHash + '"}';
             href = 'https://sapi.fikper.com/'
             httpPOSTWithCORSbypass(href, selector, link, box, index, data);
             return;
@@ -692,11 +689,11 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         } else if (contains(href, '//vidmoly.to') || contains(href, '//vidmoly.me')) {
             href = href.replace('vidmoly.me','vidmoly.to');
             if (contains(href, '/w/')) {
-                var movieId = getStringByRegex(href, /\/w\/(.+)/);
+                let movieId = getStringByRegex(href, /\/w\/(.+)/);
                 href = 'https://vidmoly.to/' + movieId + '.html';
             }
             if (contains(href, 'https://vidmoly.to/embed-')) {
-                var movieId = getStringByRegex(href, /\/embed-(.+?)\.html/);
+                let movieId = getStringByRegex(href, /\/embed-(.+?)\.html/);
                 href = 'https://vidmoly.to/' + movieId + '.html';
             }
             selector = '#video-content .vid-d .box a';
@@ -713,7 +710,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return; //continue;
         }
 
-        var linkText = link.innerText;
+        let linkText = link.innerText;
         link.innerText = linkText + " ...";
 
         $.ajax ( {
@@ -721,10 +718,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             url:        href,
             dataType:   'html',
             success:    function (data) {
-                var $page = $(data);
-                var $sizeElement;
+                let $page = $(data);
+                let $sizeElement;
                 if (selector instanceof Array) {
-                    var i=0;
+                    let i=0;
                     do {
                         $sizeElement = $page.find(selector[i++]);
                     } while($sizeElement.length == 0 && i < selector.length);
@@ -732,7 +729,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
                     $sizeElement = $page.find(selector);
                 }
 
-                var size = $sizeElement.text();
+                let size = $sizeElement.text();
                 if (contains(href, 'hexupload.net')) {
                     if (contains(size, '(')) {
                         size = size.substring(0, size.lastIndexOf('B)') + 2);
@@ -761,14 +758,15 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
 }
 
 function httpGETWithCORSbypass(url, selector, link, box, index) {
-    var linkText = link.innerText;
+    let linkText = link.innerText;
     link.innerText = linkText + " ...";
     GM.xmlHttpRequest({
         method: "GET",
         url: url,
         onload: function(response) {
-            var dom2 = htmlToElement(response.responseText);
-            var size = dom2.querySelector(selector);
+            let template = htmlToElement(response.responseText);
+            let dom2 = template.content;
+            let size = dom2.querySelector(selector);
             if (size != null) {
                 size = size.innerText;
                 size = size.trim();
@@ -777,7 +775,7 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 } else if (contains(url, 'iceyfile.com')) {
                     size = size.replace(/.*\(/, '(');
                 } else if (contains(url, 'wolfstream.tv')) {
-                    var needle = "\n";
+                    let needle = "\n";
                     size = size.substring(size.lastIndexOf (needle) + needle.length);
                 }
                 size = size.replace('Size', '');
@@ -792,12 +790,12 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 } else if (contains(url, 'embedrise.com')) {
                     size = size.replace(',', '').replace('.',',');
                 } else if (contains(url, 'megaup.net')) {
-                    var needle = ": ";
+                    let needle = ": ";
                     size = size.substring(size.lastIndexOf (needle) + needle.length);
                 }
                 // premium check
                 if (contains(url, 'rapidgator.net')) {
-                    var table = dom2.querySelector("#table_header");
+                    let table = dom2.querySelector("#table_header");
                     if (table.innerText.includes("Premium")) {
                         size = size + '[P]';
                     }
@@ -806,13 +804,13 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                 size = "-";
                 // premium check
                 if (contains(url, 'frdl.to')) {
-                    var table = dom2.querySelector("#container .err");
+                    let table = dom2.querySelector("#container .err");
                     if (table.innerText.includes("Premium Users only")) {
                         size = '[P]';
                     }
                 }
                 if (contains(url, 'send.cm')) {
-                    var table = dom2.querySelector(".container .alert-warning");
+                    let table = dom2.querySelector(".container .alert-warning");
                     if (table.innerText.includes("Premium Users")) {
                         size = '[P]';
                     }
@@ -820,6 +818,7 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
             }
             link.innerText = linkText + " " + size;
             addSizeToIcon(box, link.href, size, index);
+            template.innerHTML = '';
         },
         ontimeout: function(response) {
             console.log('ontimeout');
@@ -833,7 +832,7 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
 }
 
 function httpPOSTWithCORSbypass(url, selector, link, box, index, data) {
-    var linkText = link.innerText;
+    let linkText = link.innerText;
     link.innerText = linkText + " ...";
     GM.xmlHttpRequest({
         method: "POST",
@@ -847,8 +846,8 @@ function httpPOSTWithCORSbypass(url, selector, link, box, index, data) {
         },
         onload: function(response) {
             if (selector!=undefined) {
-                var dom2 = htmlToElement(response.responseText);
-                var size = dom2.querySelector(selector);
+                let dom2 = htmlToElement(response.responseText);
+                let size = dom2.querySelector(selector);
                 if (size != null) {
                     size = size.innerText;
                     size = size.trim();
@@ -884,10 +883,10 @@ function httpPOSTWithCORSbypass(url, selector, link, box, index, data) {
 }
 
 function htmlToElement(html) {
-    var template = document.createElement('template');
+    let template = document.createElement('template');
     html = html.trim();
     template.innerHTML = html;
-    return template.content;
+    return template;
 }
 
 function initLoadNextPage() {
@@ -899,10 +898,10 @@ function initLoadNextPage() {
 }
 
 function getMaxPage() {
-    var pagination = document.querySelectorAll('#center_control a');
+    let pagination = document.querySelectorAll('#center_control a');
     if (pagination != undefined && pagination.length > 0) {
-        var lastPageLink = pagination[pagination.length-1].href;
-        var maxPage = getStringByRegex(lastPageLink, /(\d+)$/i);
+        let lastPageLink = pagination[pagination.length-1].href;
+        let maxPage = getStringByRegex(lastPageLink, /(\d+)$/i);
         if (maxPage == undefined) {
             maxPage = getStringByRegex(lastPageLink, /page=(\d+)/i);
         }
@@ -911,13 +910,13 @@ function getMaxPage() {
 }
 
 function addLoadNextPageButtonAtTheTop() {
-    var loadNextPageButton = document.createElement("input");
+    let loadNextPageButton = document.createElement("input");
     loadNextPageButton.setAttribute("type", "button");
     loadNextPageButton.setAttribute("class", "nextPageButton");
     loadNextPageButton.setAttribute("style", "width:10%; position:absolute;right:0px");
     loadNextPageButton.onclick = loadNextPage;
 
-    var destination = document.getElementsByClassName('main_content')[0];
+    let destination = document.getElementsByClassName('main_content')[0];
     if (destination != undefined) {
         insertAsFirstChild(destination, loadNextPageButton);
         updateButtonNumber();
@@ -925,13 +924,13 @@ function addLoadNextPageButtonAtTheTop() {
 }
 
 function addLoadNextPageButtonAtTheBottom() {
-    var loadNextPageButton = document.createElement("input");
+    let loadNextPageButton = document.createElement("input");
     loadNextPageButton.setAttribute("type", "button");
     loadNextPageButton.setAttribute("class", "nextPageButton");
     loadNextPageButton.setAttribute("style", "width:50%; background-color:#262932; color: #FFC3FA");
     loadNextPageButton.onclick = loadNextPage;
 
-    var destination = document.querySelector('#center_control');
+    let destination = document.querySelector('#center_control');
     if (destination != undefined) {
         insertBefore(destination, loadNextPageButton);
         updateButtonNumber();
@@ -946,16 +945,16 @@ function updateButtonNumber() {
 
 function loadNextPage() {
     blockButton();
-    var isAsmPage = pageUrl.endsWith('asm/');
-    var nextPageUrl;
-    var indexOfPageParameter = pageUrl.indexOf('page=');
+    let isAsmPage = pageUrl.endsWith('asm/');
+    let nextPageUrl;
+    let indexOfPageParameter = pageUrl.indexOf('page=');
     if (isAsmPage) {
         nextPageUrl = pageUrl.substring(0, pageUrl.lastIndexOf('/')+1) + nextPageNumber;
     } else {
         if (indexOfPageParameter > 0) {
             pageUrl = pageUrl.substring(0,indexOfPageParameter);
         } else {
-            var indexOfQuestionMark = pageUrl.indexOf('?');
+            let indexOfQuestionMark = pageUrl.indexOf('?');
             if (indexOfQuestionMark > 0) {
                 pageUrl = pageUrl + '&';
             } else {
@@ -970,29 +969,29 @@ function loadNextPage() {
         url:        nextPageUrl,
         dataType:   'html',
         success:    function (data) {
-            var $page = $(data);
-            var $newElements = $page.find('.main_content .post_el_small');
-            var $oldElements = $('.post_el_small');
-            var $last = $oldElements.last();
+            let $page = $(data);
+            let $newElements = $page.find('.main_content .post_el_small');
+            let $oldElements = $('.post_el_small');
+            let $last = $oldElements.last();
 
-            var indexesToRemove = [];
+            let indexesToRemove = [];
             // find existing ones in the new ones and save index to delete to avoid deleting while iterating
             $newElements.each(function(i, newItem) {
                 if (newItem != undefined) {
-                    var movieLink = $(newItem).find('a.js-pop').first();
+                    let movieLink = $(newItem).find('a.js-pop').first();
                     if (movieLink == undefined) {
                         movieLink = $(newItem).find('.post_control>a').first();
                     }
-                    var newHref = movieLink.attr('href');
-                    var newMovieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
-                    var exists = false;
+                    let newHref = movieLink.attr('href');
+                    let newMovieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
+                    let exists = false;
                     // console.log("new movie id " + newMovieId);
                     $oldElements.each(function(j, old) {
-                        var href = $(old).find('a.js-pop').first().attr('href');
+                        let href = $(old).find('a.js-pop').first().attr('href');
                         if (href == undefined) {
                             href = $(old).find('.post_control>a').first().attr('href');
                         }
-                        var movieId = getStringByRegex(href,/\/([0-9a-f]+)\.html/);
+                        let movieId = getStringByRegex(href,/\/([0-9a-f]+)\.html/);
                         // console.log('checking new vs old  ' + newMovieId + ' == ' + movieId);
                         if (newMovieId == movieId) {
                             exists = true;
@@ -1002,7 +1001,7 @@ function loadNextPage() {
                     // console.log(' ' + newMovieId + ' exists? ' + exists + " as " + i);
                 }
             });
-            for (var i = indexesToRemove.length - 1 ; i>=0 ; i--) {
+            for (let i = indexesToRemove.length - 1 ; i>=0 ; i--) {
                 $newElements.splice(i, 1);
             }
             $newElements.insertAfter($last);
@@ -1033,46 +1032,45 @@ function loadNextPage() {
 
 function findMovieIdsPresentOnMainPage($oldElements){
 
-    var idsFromTheFirstPage = [];
+    let idsFromTheFirstPage = [];
     $.ajax ( {
         type:       'GET',
         url:        window.location.origin,
         dataType:   'html',
         success:    function (data) {
-            var $page = $(data);
-            var $newElements = $page.find('.main_content .post_el_small');
-            var indexesToRemove = [];
-            debugger;
+            let $page = $(data);
+            let $newElements = $page.find('.main_content .post_el_small');
+            let indexesToRemove = [];
             $newElements.each(function(i, newItem) {
                 if (newItem != undefined) {
-                    var movieLink = $(newItem).find('a.js-pop').first();
+                    let movieLink = $(newItem).find('a.js-pop').first();
                     if (movieLink == undefined) {
                         movieLink = $(newItem).find('.post_control>a').first();
                     }
-                    var newHref = movieLink.attr('href');
-                    var movieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
+                    let newHref = movieLink.attr('href');
+                    let movieId = getStringByRegex(newHref,/\/([0-9a-f]+)\.html/);
                     idsFromTheFirstPage.push(movieId);
                 }
             });
 
-            var oldIndexesToRemove = [];
+            let oldIndexesToRemove = [];
             $oldElements.each(function(i, oldItem) {
                 $(idsFromTheFirstPage).each(function(j, fromFirst) {
-                    var exists = false;
-                    var href = $(oldItem).find('a.js-pop').first().attr('href');
+                    let exists = false;
+                    let href = $(oldItem).find('a.js-pop').first().attr('href');
                     if(href == undefined) {
                         href = $(oldItem).find('.post_control>a').first().attr('href');
                     }
-                    var oldMovieId = getStringByRegex(href,/\/([0-9a-f]+)\.html/);
-                    console.log('checking first vs oldMovieId  ' + fromFirst + ' == ' + oldMovieId);
+                    let oldMovieId = getStringByRegex(href,/\/([0-9a-f]+)\.html/);
+                    // console.log('checking first vs oldMovieId  ' + fromFirst + ' == ' + oldMovieId);
                     if (fromFirst == oldMovieId) {
                         exists = true;
                         oldIndexesToRemove.push(i);
                     }
                 });
             });
-            for (var i = oldIndexesToRemove.length - 1; i >= 0; i--) {
-                var indexToRemove = oldIndexesToRemove[i];
+            for (let i = oldIndexesToRemove.length - 1; i >= 0; i--) {
+                let indexToRemove = oldIndexesToRemove[i];
                 $oldElements.get(indexToRemove).firstElementChild.firstElementChild.classList.add('red');
                 // $oldElements.get(indexToRemove).innerHTML = '';
             }
@@ -1100,7 +1098,7 @@ function unblockButton() {
 
 //---------- LOAD TIMES
 function initLoadTimes() {
-    var linesContainer = document.querySelector('#linesContainer');
+    let linesContainer = document.querySelector('#linesContainer');
     if (linesContainer != undefined) {
         linesContainer.outerHTML='';
     }
@@ -1111,9 +1109,9 @@ function initLoadTimes() {
 
     addSizesWhenBrowsing();
     if (autoloadForEqualDurationTimes) {
-        // var startTime = performance.now();
+        // let startTime = performance.now();
         checkDurations();
-        // var endTime = performance.now();
+        // let endTime = performance.now();
         // console.log(`searching names took ${endTime - startTime} ms`);
         addHideRedButton();
         // setTimeout(clickHideRedButton, 1000);
@@ -1124,7 +1122,7 @@ function initLoadTimes() {
 }
 
 function clickHideRedButton() {
-    var b = document.querySelector("#hideRed")
+    let b = document.querySelector("#hideRed")
     b.click();
 }
 
@@ -1132,19 +1130,19 @@ function addHideRedButton() {
     if (document.querySelector('.hide_red') != undefined) {
         return;
     }
-    var newButton = document.createElement("button");
+    let newButton = document.createElement("button");
     newButton.setAttribute("style", "margin-left:10px; opacity:0.1;border: none; padding: 1px 3px; ");
     newButton.setAttribute("class", "hide_red");
     newButton.id="hideRed";
     newButton.innerText="hide red";
     newButton.addEventListener("mouseover", function() { hideRed() });
     newButton.addEventListener("click", function() { hideRed() });
-    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    let destination = document.getElementsByClassName('splitter_block_header')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
     }
-    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    let tags = document.querySelectorAll('div.search_results a.htag_rel_a');
     destination = tags[tags.length-1];
     if (destination != undefined) {
         insertAfter(destination, newButton);
@@ -1158,25 +1156,25 @@ function addHideRedButton() {
 }
 
 function addLoadExternalButton() {
-    var newButton = document.createElement("button");
+    let newButton = document.createElement("button");
     newButton.setAttribute("style", "margin-left:10px; opacity:0.3;border: none; padding: 1px 3px; ");
     newButton.id="load_external_sizes";
     newButton.innerText="load external sizes";
     newButton.addEventListener("click", function() {
-        var allBoxes = document.querySelectorAll('div.post_text');
+        let allBoxes = document.querySelectorAll('div.post_text');
         allBoxes.forEach(box => {
-            var externalLinksForThisBox = box.querySelectorAll('a.extlink');
+            let externalLinksForThisBox = box.querySelectorAll('a.extlink');
             if (externalLinksForThisBox.length > 0) {
                 loadSizesForAllExternalLinks(box, externalLinksForThisBox);
             }
         });
     });
-    var destination = document.getElementsByClassName('splitter_block_header')[0];
+    let destination = document.getElementsByClassName('splitter_block_header')[0];
     if (destination != undefined) {
         insertAsLastChild(destination, newButton);
         return;
     }
-    var tags = document.querySelectorAll('div.search_results a.htag_rel_a');
+    let tags = document.querySelectorAll('div.search_results a.htag_rel_a');
     destination = tags[tags.length-1];
     if (destination != undefined) {
         insertAfter(destination, newButton);
@@ -1189,29 +1187,29 @@ function addLoadExternalButton() {
     }
 }
 function loadWhiteSizes() {
-    var whiteButtons = document.querySelectorAll('.get_movie_size:not(.red)');
+    let whiteButtons = document.querySelectorAll('.get_movie_size:not(.red)');
     whiteButtons.forEach(b => b.click());
 }
 
 function hideRed() {
-    var redLabels = document.querySelectorAll('.red');
+    let redLabels = document.querySelectorAll('.red');
     redLabels.forEach(label => {label.parentElement.parentElement.style.opacity = '0.3'; } );
 }
 
 function resetRed() {
-    var redLabels = document.querySelectorAll('.red');
+    let redLabels = document.querySelectorAll('.red');
     redLabels.forEach(label => {label.parentElement.parentElement.style.opacity = '1'; label.classList.remove('red'); } );
 }
 
 function resetGreen() {
-    var redLabels = document.querySelectorAll('.green');
+    let redLabels = document.querySelectorAll('.green');
     redLabels.forEach(label => label.classList.remove('green') );
 }
 
 
 function draw() {
     // remove old lines:
-    var drawnLines = document.querySelectorAll('.drawnLine');
+    let drawnLines = document.querySelectorAll('.drawnLine');
     for (let drawnLine of drawnLines) {
         drawnLine.remove();
     }
@@ -1220,17 +1218,17 @@ function draw() {
         if (sizes.length == 1) {
             return;
         }
-        var maxSize = getMaxNumber(sizes);
-        var els = mapEl.get(duration);
-        var lineClass = 'line'+duration.replaceAll(':','-');
-        for (var i = 0 ; i < sizes.length ; i++) {
+        let maxSize = getMaxNumber(sizes);
+        let els = mapEl.get(duration);
+        let lineClass = 'line'+duration.replaceAll(':','-');
+        for (let i = 0 ; i < sizes.length ; i++) {
             if (sizes[i] == maxSize) {
-                for (var j = 0 ; j < sizes.length ; j++) {
+                for (let j = 0 ; j < sizes.length ; j++) {
                     if (i == j) {
                         continue;
                     }
 
-                    var bothSizesAreMaxSize = false;
+                    let bothSizesAreMaxSize = false;
                     if (sizes[j] == maxSize) {
                         bothSizesAreMaxSize = true;
                     }
@@ -1242,12 +1240,12 @@ function draw() {
 }
 
 function drawLineBetween(el1, el2, lineClass, noGradient) {
-    var rect1 = el1.getBoundingClientRect();
-    var rect2 = el2.getBoundingClientRect();
-    var x1 = rect1.x+pageXOffset;
-    var y1 = rect1.y+window.pageYOffset;
-    var x2 = rect2.x+pageXOffset;
-    var y2 = rect2.y+window.pageYOffset;
+    let rect1 = el1.getBoundingClientRect();
+    let rect2 = el2.getBoundingClientRect();
+    let x1 = rect1.x+pageXOffset;
+    let y1 = rect1.y+window.pageYOffset;
+    let x2 = rect2.x+pageXOffset;
+    let y2 = rect2.y+window.pageYOffset;
     x1 = Math.floor(x1);
     y1 = Math.floor(y1);
     x2 = Math.floor(x2);
@@ -1258,30 +1256,30 @@ function drawLineBetween(el1, el2, lineClass, noGradient) {
 
 function attachShowHideListeners(el1, el2, lineClass) {
     el1.addEventListener('mouseover', function handleMouseOver() {
-        var lines = document.querySelectorAll('.' + lineClass);
+        let lines = document.querySelectorAll('.' + lineClass);
         lines.forEach(line => {line.style.display = 'block'});
     });
 
     el1.addEventListener('mouseout', function handleMouseOut() {
-        var lines = document.querySelectorAll('.' + lineClass);
+        let lines = document.querySelectorAll('.' + lineClass);
         setTimeout(function() {lines.forEach(line => {line.style.display = 'none'});}, 1500);
     });
 
     el2.addEventListener('mouseover', function handleMouseOver() {
-        var lines = document.querySelectorAll('.' + lineClass);
+        let lines = document.querySelectorAll('.' + lineClass);
         lines.forEach(line => {line.style.display = 'block'});
     });
 
     el2.addEventListener('mouseout', function handleMouseOut() {
-        var lines = document.querySelectorAll('.' + lineClass);
+        let lines = document.querySelectorAll('.' + lineClass);
         setTimeout(function() {lines.forEach(line => {line.style.display = 'none'});}, 1500);
     });
 }
 
 function linedraw(x1, y1, x2, y2, lineClass, noGradient) {
-    var switchGradientDirection = false;
+    let switchGradientDirection = false;
     if (x2 < x1) {
-        var tmp;
+        let tmp;
         tmp = x2 ; x2 = x1 ; x1 = tmp;
         tmp = y2 ; y2 = y1 ; y1 = tmp;
         switchGradientDirection = true;
@@ -1291,13 +1289,13 @@ function linedraw(x1, y1, x2, y2, lineClass, noGradient) {
     x2 = Math.floor(x2);
     y2 = Math.floor(y2);
     // console.log(`drawing from ${x1} ${x1} to ${x2} ${y2}`);
-    var lineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
-    var m = (y2 - y1) / (x2 - x1);
-    var degree = Math.atan(m) * 180 / Math.PI;
+    let lineLength = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+    let m = (y2 - y1) / (x2 - x1);
+    let degree = Math.atan(m) * 180 / Math.PI;
 
-    var destination = document.querySelector('#linesContainer');
+    let destination = document.querySelector('#linesContainer');
     // console.log("creating line"+x1+y1+x2+y2);
-    var backgroundCSS;
+    let backgroundCSS;
     if (noGradient == true) {
         backgroundCSS = 'background: yellow;';
     } else {
@@ -1312,37 +1310,37 @@ function linedraw(x1, y1, x2, y2, lineClass, noGradient) {
 }
 
 function checkDurations() {
-    var hasResults = document.querySelector('.page_message');
+    let hasResults = document.querySelector('.page_message');
     if (hasResults != undefined && hasResults.innerText.indexOf('Nothing Found')>-1) {
         return;
     }
 
-    var boxes = document.querySelectorAll('div.post_el_small');
+    let boxes = document.querySelectorAll('div.post_el_small');
     if (boxes.length == 0) {
         return ;
     }
-    for (var i = 0 ; i<boxes.length ; i++) {
-        var found = false;
-        var el = boxes[i];
-        var durationBox = el.querySelector('.duration_small');
+    for (let i = 0 ; i<boxes.length ; i++) {
+        let found = false;
+        let el = boxes[i];
+        let durationBox = el.querySelector('.duration_small');
         if (durationBox == null) {
             continue;
         }
-        var duration = durationBox.innerText;
-        for (var j = i+1 ; j<boxes.length ; j++) {
+        let duration = durationBox.innerText;
+        for (let j = i+1 ; j<boxes.length ; j++) {
             if (i == j) {
                 continue;
             }
-            var el2 = boxes[j];
-            var durationBox2 = el2.querySelector('.duration_small');
+            let el2 = boxes[j];
+            let durationBox2 = el2.querySelector('.duration_small');
             if (durationBox2 == null) {
                 continue;
             }
-            var duration2 = durationBox2.innerText;
+            let duration2 = durationBox2.innerText;
             //console.log('checking ' + duration + ' == ' + duration2);
             if (duration == duration2) {
                 if (el2.querySelector('.movieSize') != undefined) {
-                    var button2 = el2.querySelector('.get_movie_size');
+                    let button2 = el2.querySelector('.get_movie_size');
                     if (button2 != undefined) {
                         found = true;
                         button2.click();
@@ -1352,7 +1350,7 @@ function checkDurations() {
         }
         if (found) {
             if (el2.querySelector('.movieSize') != undefined) {
-                var button = el.querySelector('.get_movie_size');
+                let button = el.querySelector('.get_movie_size');
                 if (button != undefined) {
                     button.click();
                 }
@@ -1362,11 +1360,11 @@ function checkDurations() {
 }
 
 function addSizesWhenBrowsing() {
-    var boxes = document.querySelectorAll('div.post_el_small');
+    let boxes = document.querySelectorAll('div.post_el_small');
     if (boxes.length == 0) {
         return ;
     }
-    var selStartTime, selEndTime;
+    let selStartTime, selEndTime;
     //selStartTime = performance.now();
     boxes.forEach(box => {
         if (!box.classList.contains('alreadyProcessed')) {
@@ -1379,16 +1377,16 @@ function addSizesWhenBrowsing() {
 
 
 function addButtonToGetMovieSize(box) {
-    var referenceNode = box.getElementsByClassName('post_time')[0];
+    let referenceNode = box.getElementsByClassName('post_time')[0];
     if (referenceNode == undefined) {
         return;
     }
-    var getMovieSizeButtonAlreadyExists = box.getElementsByClassName('get_movie_size');
+    let getMovieSizeButtonAlreadyExists = box.getElementsByClassName('get_movie_size');
     if (getMovieSizeButtonAlreadyExists.length > 0) {
         //skip adding another button when "load next" is clicked too fast
         return;
     }
-    var newButton = document.createElement("button");
+    let newButton = document.createElement("button");
     newButton.setAttribute("style", "margin-left:10px; opacity:0.1;border: none; padding: 1px 3px; ");
     newButton.setAttribute("class", "get_movie_size");
     newButton.innerText="get";
@@ -1398,17 +1396,17 @@ function addButtonToGetMovieSize(box) {
 }
 
 function go(box) {
-    var movieLink = box.querySelector('a.js-pop');
+    let movieLink = box.querySelector('a.js-pop');
     if (movieLink == undefined) {
         movieLink = box.querySelector('.post_control>a');
     }
-    var movieHref = movieLink.href;
+    let movieHref = movieLink.href;
     downloadGetMovieSizeAndAddNewElement(movieHref, box);
 }
 
 function setMovieSize(movieSize, el) {
-    var movieSizeElement = createTextElement(movieSize + ' MB');
-    var destination = el.getElementsByClassName('post_time')[0];
+    let movieSizeElement = createTextElement(movieSize + ' MB');
+    let destination = el.getElementsByClassName('post_time')[0];
     movieSizeElement.classList.add('movieSize');
     movieSizeElement.classList.add('highlightme' + movieSize.replace(':',''));
     insertAfter(destination, movieSizeElement);
@@ -1422,10 +1420,10 @@ function downloadGetMovieSizeAndAddNewElement(moviePageUrl, el) {
         url:         moviePageUrl,
         dataType:   'html',
         success:    function (data) {
-            var $page = $(data);
-            var movieSize = $page.find('div.post_control').first().prev().text();
+            let $page = $(data);
+            let movieSize = $page.find('div.post_control').first().prev().text();
             const regex = /size:(\d+)/i;
-            var match = regex.exec(movieSize);
+            let match = regex.exec(movieSize);
             if (match == undefined) {
                 setMovieSize('---', el);
             } else {
@@ -1449,12 +1447,12 @@ function downloadGetMovieSizeAndAddNewElement(moviePageUrl, el) {
   If this box contains streamhub.to link its href will be suffixed with original http movie size
 */
 function updateStreamhubToHrefForBoxView(box, movieSize) {
-    var externalLinksForThisBox = box.querySelectorAll('a.extlink');
+    let externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
             if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx') || contains(link.href, 'embedrise.com') || contains(link.href, 'vtbe.to')) {
                 // just including filesize in the link
-                var normalSize = box.querySelector('.movieSize').innerText.replace(' ','');
+                let normalSize = box.querySelector('.movieSize').innerText.replace(' ','');
                 link.href = link.href + '#' + normalSize;
                 return;
             }
@@ -1466,14 +1464,14 @@ function updateStreamhubToHrefForBoxView(box, movieSize) {
   If this box contains streamhub.to link its href will be suffixed with original http movie size
 */
 function updateStreamhubToHrefForSingleMoviePage(box) {
-    var externalLinksForThisBox = box.querySelectorAll('a.extlink');
+    let externalLinksForThisBox = box.querySelectorAll('a.extlink');
     if (externalLinksForThisBox.length > 0) {
         externalLinksForThisBox.forEach((link, index) => {
             if (contains(link.href, 'streamhub.to') || contains(link.href, 'streamvid.net') || contains(link.href, 'sbembed.com') || contains(link.href, 'vtube.to') || contains(link.href, 'wolfstream.tv') || contains(link.href, 'filelions.to') || contains(link.href, 'filemoon.sx') || contains(link.href, 'embedrise.com')|| contains(link.href, 'vtbe.to')) {
                 // just including filesize in the link
-                var normalSize = $('div.post_control').first().prev().text();
+                let normalSize = $('div.post_control').first().prev().text();
                 const regex = /size:(\d+)/i;
-                var match = regex.exec(normalSize);
+                let match = regex.exec(normalSize);
                 if (match == undefined) {
                     normalSize = '---';
                 } else {
@@ -1488,17 +1486,16 @@ function updateStreamhubToHrefForSingleMoviePage(box) {
 
 
 function makeTimeElementCopyLinkToClipboard() {
-    debugger;
-    var times = document.querySelectorAll('.duration_small');
+    let times = document.querySelectorAll('.duration_small');
     times.forEach((span) => span.addEventListener('click', function (event) {
         event.preventDefault();
-        var url = event.currentTarget.closest('a.js-pop');
+        let url = event.currentTarget.closest('a.js-pop');
         setTimeout( function() { copyTextToClipboard(url); } , 100);
     }));
 }
 
 function addResultToMap(el, size) {
-    var duration = el.getElementsByClassName('duration_small')[0].innerText;
+    let duration = el.getElementsByClassName('duration_small')[0].innerText;
     size = parseInt(size);
     if (map.has(duration)) {
         map.get(duration).push(size);
@@ -1516,8 +1513,8 @@ function highlightBiggestMovieSizes() {
     map.forEach((sizes, duration) => {
 
         if (duration == "EXTERNAL LINK") {
-            var els = mapEl.get(duration);
-            for (var i = 0 ; i < sizes.length ; i++) {
+            let els = mapEl.get(duration);
+            for (let i = 0 ; i < sizes.length ; i++) {
                 els[i].querySelector('.movieSize').classList.add('grey');
             }
             return;
@@ -1525,10 +1522,10 @@ function highlightBiggestMovieSizes() {
         if (sizes.length == 1) {
             return;
         }
-        var maxSize = getMaxNumber(sizes);
-        var els = mapEl.get(duration);
+        let maxSize = getMaxNumber(sizes);
+        let els = mapEl.get(duration);
 
-        for (var i = 0 ; i < sizes.length ; i++) {
+        for (let i = 0 ; i < sizes.length ; i++) {
             if (maxSize == sizes[i]) {
                 els[i].querySelector('.movieSize').classList.add('green');
             } else {
@@ -1539,8 +1536,8 @@ function highlightBiggestMovieSizes() {
 }
 
 function getMaxNumber(sizes) {
-    var maxNum = 0;
-    for (var i = 0 ; i < sizes.length ; i++) {
+    let maxNum = 0;
+    for (let i = 0 ; i < sizes.length ; i++) {
         if (sizes[i] > maxNum) {
             maxNum = sizes[i];
         }
@@ -1549,9 +1546,9 @@ function getMaxNumber(sizes) {
 }
 
 function getIndexOfMaxNumber(sizes) {
-    var maxNum = 0;
-    var maxIndex = 0;
-    for (var i = 0 ; i < sizes.length ; i++) {
+    let maxNum = 0;
+    let maxIndex = 0;
+    for (let i = 0 ; i < sizes.length ; i++) {
         if (sizes[i] > maxNum) {
             maxNum = sizes[i];
             maxIndex = i;
@@ -1561,14 +1558,14 @@ function getIndexOfMaxNumber(sizes) {
 }
 
 function removeButton(el) {
-    var button = el.getElementsByClassName('get_movie_size');
+    let button = el.getElementsByClassName('get_movie_size');
     if (button[0]!=undefined) {
         button[0].remove();
     }
 }
 
 function createTextElement(text) {
-    var newElement = document.createElement("span");
+    let newElement = document.createElement("span");
     newElement.setAttribute("class", "post_text");
     newElement.setAttribute("style", "margin-left:10px;");
     newElement.innerText=text;
@@ -1590,11 +1587,11 @@ function insertAsLastChild(referenceNode, newNode) {
 
 //* returns first capturing group */
 function getStringByRegex(text, regex) {
-    var match = regex.exec(text);
+    let match = regex.exec(text);
     if (match == null) {
         return undefined;
     }
-    var result = match[1];
+    let result = match[1];
     return result;
 }
 
@@ -1604,7 +1601,7 @@ function contains(haystack, needle) {
 
 // copying requires hidden textarea
 function copyTextToClipboard(text) {
-    var textArea = document.createElement("textarea");
+    let textArea = document.createElement("textarea");
 
     //
     // *** This styling is an extra step which is likely not required. ***
@@ -1650,8 +1647,8 @@ function copyTextToClipboard(text) {
     textArea.select();
 
     try {
-        var successful = document.execCommand('copy');
-        var msg = successful ? 'successful' : 'unsuccessful';
+        let successful = document.execCommand('copy');
+        let msg = successful ? 'successful' : 'unsuccessful';
         //console.log('Copying text command was ' + msg);
     } catch (err) {
         //console.log('Oops, unable to copy');
