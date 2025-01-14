@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.21
+// @version      2.23
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -34,10 +34,12 @@
 // @connect      dood.wf
 // @connect      dood.yt
 // @connect      dood.li
+// @connect      dood.work
 // @connect      d0o0d.com
 // @connect      do0od.com
 // @connect      d0000d.com
 // @connect      d000d.com
+// @connect      dooodster.com
 // @connect      ds2play.com
 // @connect      doods.pro
 // @connect      upvideo.to
@@ -114,6 +116,8 @@
 // v2.20 redraw lines on window resize
 // v2.21 redundant <template> removal
 // v2.21 using 'let'
+// v2.22 partially fixed paging for isTopViewed
+// v2.23 fixed NPE
 
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
@@ -188,12 +192,12 @@ function addButtonToSortByTimeAndSizeIncludingExternals() {
 function addButtonToSortByTimeAndSize() {
     let newButton = document.createElement("a");
     newButton.id="mySortButton1";
-    newButton.text=" sort by time and size ";
+    newButton.text=" by title, time, size ";
     newButton.setAttribute("style", 'color: #FF0000; margin-left: 20px; font-weight: 1000; font-size: 12px;');
 
     newButton.addEventListener('click', function(event) {
         removeVerticalProgressNumbers();
-        doSortByTimeAndSize();
+        doSortByTitleContainingSearchPhraseTimeAndSize();
         resetGreen();
         resetRed();
         addVerticalProgressNumbers();
@@ -287,6 +291,36 @@ function doSortBySize() {
     }).prependTo($container);
     $container.children().last().detach().prependTo($container);
 }
+
+function doSortByTitleContainingSearchPhraseTimeAndSize() {
+    let searchPhrase = $('input#se_in').val().toLowerCase();
+    let $container = $('div.post_el_small').first().parent();
+    let $boxes = $('div.post_el_small');
+    $boxes.sort(function (b, a) {
+        let titleA = $(a).find('.post_text').text().replaceAll('  ',' ').toLowerCase();
+        let titleB = $(b).find('.post_text').text().replaceAll('  ',' ').toLowerCase();
+        let hasA = titleA.includes(searchPhrase);
+        let hasB = titleB.includes(searchPhrase);
+        if (hasA < hasB) return -1;
+        if (hasA > hasB) return 1;
+
+        let contentA = parseInt( $(a).find('.duration_small').text().replaceAll(':','') );
+        let contentB = parseInt( $(b).find('.duration_small').text().replaceAll(':','') );
+        console.log(contentA + ' ' + contentB);
+        if (contentA < contentB) return -1;
+        if (contentA > contentB) return 1;
+
+        // equal time, compare sizes
+        let sizeA = parseInt( $(a).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        let sizeB = parseInt( $(b).find('.movieSize ').text().replaceAll(/[A-Z ]/,'') );
+        if (sizeA < sizeB) return -1;
+        if (sizeA > sizeB) return 1;
+
+        return 0;
+    }).prependTo($container);
+    $container.children().last().detach().prependTo($container);
+}
+
 
 function doSortByTimeAndSize() {
     let $container = $('div.post_el_small').first().parent();
@@ -945,14 +979,23 @@ function updateButtonNumber() {
 
 function loadNextPage() {
     blockButton();
-    let isAsmPage = pageUrl.endsWith('asm/');
+    let isAsmPage = /asm\/(\d+)?$/.exec(pageUrl) != null;
+    let isTopViewedPage = /\/top-viewed.html\/?(\d+)?$/.exec(pageUrl) != null;
     let nextPageUrl;
     let indexOfPageParameter = pageUrl.indexOf('page=');
     if (isAsmPage) {
         nextPageUrl = pageUrl.substring(0, pageUrl.lastIndexOf('/')+1) + nextPageNumber;
+    } else if (isTopViewedPage) {
+        if (pageUrl.endsWith('.html')) {
+            nextPageUrl = pageUrl + '/' + nextPageNumber;
+        } else {
+            // TODO parse number from URL, add 30 and set as nextPageNumber because currently i always loads first page (30)
+            //  let currentPage = getStringByRegex(lastPageLink, /(\d+)$/i);
+            nextPageUrl = pageUrl.substring(0, pageUrl.lastIndexOf('/') + 1) + nextPageNumber;
+        }
     } else {
         if (indexOfPageParameter > 0) {
-            pageUrl = pageUrl.substring(0,indexOfPageParameter);
+            pageUrl = pageUrl.substring(0, indexOfPageParameter);
         } else {
             let indexOfQuestionMark = pageUrl.indexOf('?');
             if (indexOfQuestionMark > 0) {
@@ -1495,7 +1538,11 @@ function makeTimeElementCopyLinkToClipboard() {
 }
 
 function addResultToMap(el, size) {
-    let duration = el.getElementsByClassName('duration_small')[0].innerText;
+    let timeElement = el.getElementsByClassName('duration_small');
+    if (timeElement === undefined || timeElement[0] === undefined) {
+        return;
+    }
+    let duration = timeElement[0].innerText;
     size = parseInt(size);
     if (map.has(duration)) {
         map.get(duration).push(size);
