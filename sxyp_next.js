@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.23
+// @version      2.25
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -40,8 +40,12 @@
 // @connect      d0000d.com
 // @connect      d000d.com
 // @connect      dooodster.com
+// @connect      vide0.net
+// @connect      do7go.com
+// @connect      vidply.com
 // @connect      ds2play.com
 // @connect      doods.pro
+// @connect      doply.net
 // @connect      upvideo.to
 // @connect      highload.to
 // @connect      rapidgator.net
@@ -118,6 +122,8 @@
 // v2.21 using 'let'
 // v2.22 partially fixed paging for isTopViewed
 // v2.23 fixed NPE
+// v2.24 makeTimeElementCopyLinkToClipboard
+// v2.25 added few more hosts
 
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
@@ -1529,12 +1535,30 @@ function updateStreamhubToHrefForSingleMoviePage(box) {
 
 
 function makeTimeElementCopyLinkToClipboard() {
-    let times = document.querySelectorAll('.duration_small');
-    times.forEach((span) => span.addEventListener('click', function (event) {
-        event.preventDefault();
-        let url = event.currentTarget.closest('a.js-pop');
-        setTimeout( function() { copyTextToClipboard(url); } , 100);
-    }));
+    let times = document.querySelectorAll('.duration_small:not(.copy_link_added)');
+    times.forEach((span) => {
+        span.addEventListener('click', function (event) {
+            event.preventDefault();
+            debugger;
+            let container = event.currentTarget.closest('.vid_container');
+            let url;
+            let previousLink = container?.previousElementSibling;
+            if (previousLink && previousLink.tagName === 'A') {
+                url = previousLink.href;
+            } else {
+                previousLink = container.parentElement;
+                if (previousLink && previousLink.tagName === 'A') {
+                    url = previousLink.href;
+                } else {
+                    console.log('Unable to determine link to copy :(');
+                }
+            }
+            if (url) {
+                setTimeout( function() { copyTextToClipboard(url); } , 100);
+            }
+        });
+        span.classList.add('copy_link_added');
+    });
 }
 
 function addResultToMap(el, size) {
