@@ -10,7 +10,7 @@
 // @match        https://sxyp/o/*
 // @match        https://sxyp/*.html*
 // @match        https://sxyp/
-// @version      1.74
+// @version      1.75
 // @grant        GM_addStyle
 // @run-at       document-end
 // ==/UserScript==
@@ -26,6 +26,7 @@
 //v1.72 mat6 search
 //v1.73 fixed -amp- replacement
 //v1.74 cursor: grabbing
+//v1.75 copy link after clicking time
 
 var buttonStyle = ''; //"right:0px; position:relative";
 
@@ -54,6 +55,8 @@ GM_addStyle(' .pes_author_div {   user-select: none; } ');
     removeLayerOverThePlayer();
     redirectToDVMirrorSite();
     showLinkForEachSceneInCaseOfComboContainer();
+    makeTimeElementCopyLinkToClipboard();
+
     /*
     $("[onclick]").removeAttr("onclick");
     $("*").unbind("click");
@@ -304,7 +307,7 @@ function addMat6SearchLink() {
 
 function searchMat6() {
     var searchTerm = document.querySelector('#se_in').value;
-    window.open('https://mat6tube.tv/video/' + searchTerm);
+    window.open('https://mat6tube.com/video/' + searchTerm);
 }
 
 function addCopyLinkButton() {
@@ -489,6 +492,29 @@ function markExternalLinks() {
         }
         boxes[i].parentNode.style = newStyle;
     }
+}
+
+
+function makeTimeElementCopyLinkToClipboard() {
+    var elements = document.querySelectorAll('div.post_text');
+    addCopyLinkForElements(elements);
+}
+
+function addCopyLinkForElements(elements) {
+    elements.forEach((element) => {
+        if (element.tagName != 'DIV') {
+            return;
+        }
+        var time = element.querySelector('.duration_small');
+        if (time == undefined) {
+            return;
+        }
+        time.addEventListener('click', function (e) {
+            var href = this.parentElement.parentElement.href;
+            copyTextToClipboard(href);
+            e.preventDefault();
+        });
+    });
 }
 
 function insertAfter(referenceNode, newNode) {
