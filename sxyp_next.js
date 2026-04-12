@@ -9,7 +9,7 @@
 // @match        https://sxyp*.net/
 // @match        https://sxyp*.net/o/*
 // @match        https://sxyp*.net/*.html*
-// @version      2.25
+// @version      2.29
 // @require      https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js
 // @grant        GM_addStyle
 // @grant        GM.xmlHttpRequest
@@ -18,7 +18,6 @@
 // @connect      dood.so
 // @connect      dood.com
 // @connect      doodstream.com
-// @connect      doodstream.com.
 // @connect      dood.to
 // @connect      doodapi.com
 // @connect      dooood.com
@@ -66,6 +65,19 @@
 // @connect      vidguard.to
 // @connect      go-streamer.net
 // @connect      listeamed.net
+// @connect      lulustream.com
+// @connect      vvide0.com
+// @connect      d-s.io
+// @connect      lulu.st
+// @connect      send.now
+// @connect      dsvplay.com
+// @connect      hexupload.net
+// @connect      hexload.com
+// @connect      luluvdo.com
+// @connect      myvidplay.com
+// @connect      upfiles.com
+// @connect      upfion.com
+// @connect      playmogo.com
 // @run-at       document-end
 // ==/UserScript==
 /* globals jQuery, $, waitForKeyElements */
@@ -124,6 +136,9 @@
 // v2.23 fixed NPE
 // v2.24 makeTimeElementCopyLinkToClipboard
 // v2.25 added few more hosts
+// v2.27 hexload, hexupload
+// v2.28 luluvdo, myvidplay.com
+// v2.29 playmogo.com
 
 
 GM_addStyle(' .post_text.green { color: #00dd00; }');
@@ -566,8 +581,8 @@ function addIconWithoutSize(movieId, href, index, destinationElement) {
     } else if (contains(href, "filefactory.com")) {
         newEl = createIconImg("https://www.filefactory.com/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
-    } else if (contains(href, "upfiles.com")) {
-        newEl = createIconImg("https://upfilesurls.com/favicon.ico", iconId);
+    } else if (contains(href, "upfiles.com") || contains(href, "upfion.com")) {
+        newEl = createIconImg("https://upfion.com/favicon.ico", iconId);
         insertAsLastChild(destinationElement, newEl);
     } else if (contains(href, "rapidcloud.cc")) {
         newEl = createIconImg("https://rapidcloud.cc/favicon.ico", iconId);
@@ -636,8 +651,6 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
         let selector;
         if (contains(href, 'ddownload.com')) {
             selector = 'span.file-size, h2>font:last-child';
-        } else if (contains(href, 'hexupload.net')) {
-            selector = ['span.h3.text-danger','.download-page'];
         } else if (contains(href, 'rapidgator.net')) {
             selector = '.file-descr>div>div>strong';
             httpGETWithCORSbypass(href, selector, link, box, index);
@@ -660,7 +673,7 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             link.href = href;
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
-        } else if (contains(href, 'dood.re') || contains(href, 'dood.so') || contains(href, 'doodstream.com') || contains(href, 'dood.to') || contains(href, 'doodapi.com') || contains(href, 'dood.watch') || contains(href, 'dood.cx') || contains(href, 'doodstream.co') || contains(href, 'dood.la') || contains(href, 'dood.ws') || contains(href, 'dood.pm') || contains(href, 'dood.sh') || contains(href, 'dood.one') || contains(href, 'dood.tech') || contains(href, 'dood.wf') || contains(href, 'dood.yt')|| contains(href, 'dood.com')|| contains(href, 'dooood.com') || contains(href, 'doods.pro')) {
+        } else if (contains(href, 'dood.re') || contains(href, 'dood.so') || contains(href, 'doodstream.com') || contains(href, 'dood.to') || contains(href, 'doodapi.com') || contains(href, 'dood.watch') || contains(href, 'dood.cx') || contains(href, 'doodstream.co') || contains(href, 'dood.la') || contains(href, 'dood.ws') || contains(href, 'dood.pm') || contains(href, 'dood.sh') || contains(href, 'dood.one') || contains(href, 'dood.tech') || contains(href, 'dood.wf') || contains(href, 'dood.yt')|| contains(href, 'dood.com')|| contains(href, 'dooood.com') || contains(href, 'doods.pro') || contains(href, 'myvidplay.com')) {
             selector = 'div.size';
             href = href.replace('/e/','/d/');
             // fix to show filesizes
@@ -707,6 +720,14 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             selector = '.btn-light';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
+        } else if (contains(href, 'hexload.com') || contains(href, 'hexupload.net')) {
+            selector = 'span.mt-4';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'lulustream.com') || contains(href, 'luluvdo.com')) {
+            selector = 'div.xsmall.text-muted > span:nth-child(3)';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
         } else if (contains(href, 'fikper.com')) {
             selector = undefined;
             let fileHash = href;
@@ -742,6 +763,10 @@ function loadSizesForAllExternalLinks(box, externalLinks) {
             return;
         } else if (contains(href, 'send.cm')) {
             selector = '#downloadbtn';
+            httpGETWithCORSbypass(href, selector, link, box, index);
+            return;
+        } else if (contains(href, 'upfiles.com') || contains(href, 'upfion.com')) {
+            selector = 'h3';
             httpGETWithCORSbypass(href, selector, link, box, index);
             return;
         }
@@ -829,7 +854,7 @@ function httpGETWithCORSbypass(url, selector, link, box, index) {
                     size = size.replace(/ uploaded.*/, '');
                 } else if (contains(url, 'embedrise.com')) {
                     size = size.replace(',', '').replace('.',',');
-                } else if (contains(url, 'megaup.net')) {
+                } else if (contains(url, 'megaup.net') || contains(url, 'hexupload.net')) {
                     let needle = ": ";
                     size = size.substring(size.lastIndexOf (needle) + needle.length);
                 }
